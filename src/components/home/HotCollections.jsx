@@ -4,13 +4,12 @@ import { Link } from "react-router-dom";
 import AuthorImage from "../../images/author_thumbnail.jpg";
 import nftImage from "../../images/nftImage.jpg";
 import axios from "axios";
-
-// Owl Carousel
 import OwlCarousel from "react-owl-carousel";
-
-// Owl Carousel CSS (required)
 import "owl.carousel/dist/assets/owl.carousel.css";
 import "owl.carousel/dist/assets/owl.theme.default.css";
+
+
+
 
 const HotCollections = () => {
   const [collections, setCollections] = useState([]);
@@ -26,7 +25,7 @@ const HotCollections = () => {
       });
   }, []);
 
-  // Owl options (tuned for “4 across” desktop like your layout)
+  
   const options = {
     loop: true,
     margin: 24,
