@@ -30,7 +30,7 @@ const HotCollections = () => {
             </div>
           </div>
 
-          {collections.slice(0, 6).map((item, index) => (
+          {collections.map((item, index) => (
             <div className="col-lg-3 col-md-6 col-sm-6 col-xs-12" key={index}>
               <div className="nft_coll">
                 <div className="nft_wrap">
