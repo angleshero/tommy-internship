@@ -1,31 +1,37 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import AuthorImage from "../../images/author_thumbnail.jpg";
-import nftImage from "../../images/nftImage.jpg";
 import axios from "axios";
 import OwlCarousel from "react-owl-carousel";
 import "owl.carousel/dist/assets/owl.carousel.css";
 import "owl.carousel/dist/assets/owl.theme.default.css";
+import Skeleton from "../UI/Skeleton";
+import $ from "jquery";
 
-
-
+// Ensure jQuery is available globally for OwlCarousel
+window.jQuery = $;
+window.$ = $;
 
 const HotCollections = () => {
   const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios
-      .get("https://us-central1-nft-cloud-functions.cloudfunctions.net/hotCollections")
-      .then((response) => {
-        setCollections(response.data);
-      })
-      .catch((error) => {
+    const fetchData = async () => {
+      try {
+        const { data } = await axios.get(
+          "https://us-central1-nft-cloud-functions.cloudfunctions.net/hotCollections",
+        );
+        setCollections(data);
+      } catch (error) {
         console.error("Error fetching collections:", error);
-      });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  
   const options = {
     loop: true,
     margin: 24,
@@ -33,7 +39,7 @@ const HotCollections = () => {
     dots: false,
     autoplay: false,
     smartSpeed: 700,
-    navText: ["‹", "›"], // simple arrow characters
+    navText: ["‹", "›"], // simple arrow characters,
     responsive: {
       0: { items: 1 },
       576: { items: 2 },
@@ -53,36 +59,77 @@ const HotCollections = () => {
             </div>
           </div>
 
-          {/* Carousel */}
           <div className="col-lg-12">
-            <OwlCarousel className="owl-theme hot-collections-carousel" {...options}>
-              {collections.map((item, index) => (
-                <div className="item" key={item.id ?? index}>
-                  {/* Keep your existing card */}
-                  <div className="nft_coll">
-                    <div className="nft_wrap">
-                      <Link to="/item-details">
-                        <img src={item.nftImage} alt="" />
-                      </Link>
-                    </div>
-
-                    <div className="nft_coll_pp">
-                      <Link to="/author">
-                        <img src={item.authorImage} alt="" />
-                      </Link>
-                      <i className="fa fa-check"></i>
-                    </div>
-
-                    <div className="nft_coll_info">
-                      <Link to="/explore">
-                        <h4>{item.title}</h4>
-                      </Link>
-                      <span>{item.code}</span>
+            {loading ? (
+              <div className="row">
+                {new Array(4).fill(0).map((_, index) => (
+                  <div
+                    className="col-lg-3 col-md-6 col-sm-6 col-xs-12"
+                    key={index}
+                  >
+                    <div className="nft_coll">
+                      <div className="nft_wrap">
+                        <Skeleton width="100%" height="200px" />
+                      </div>
+                      <div className="nft_coll_pp">
+                        <Skeleton
+                          width="50px"
+                          height="50px"
+                          borderRadius="50%"
+                        />
+                        <i className="fa fa-check"></i>
+                      </div>
+                      <div className="nft_coll_info">
+                        <Skeleton width="100px" height="20px" />
+                        <br />
+                        <Skeleton width="60px" height="20px" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </OwlCarousel>
+                ))}
+              </div>
+            ) : (
+              collections.length > 0 && (
+                <OwlCarousel
+                  className="owl-theme hot-collections-carousel"
+                  {...options}
+                >
+                  {collections.map((item, index) => (
+                    <div className="item" key={item.id ?? index}>
+                      <div className="nft_coll">
+                        <div className="nft_wrap">
+                          <Link to="/item-details">
+                            <img
+                              src={item.nftImage}
+                              className="lazy img-fluid"
+                              alt=""
+                            />
+                          </Link>
+                        </div>
+
+                        <div className="nft_coll_pp">
+                          <Link to="/author">
+                            <img
+                              className="lazy pp-coll"
+                              src={item.authorImage}
+                              alt=""
+                            />
+                          </Link>
+                          <i className="fa fa-check"></i>
+                        </div>
+
+                        <div className="nft_coll_info">
+                          <Link to="/explore">
+                            <h4>{item.title}</h4>
+                          </Link>
+                          <span>{item.code}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </OwlCarousel>
+              )
+            )}
           </div>
         </div>
       </div>
