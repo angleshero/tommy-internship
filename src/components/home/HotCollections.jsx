@@ -16,10 +16,7 @@ const HotCollections = () => {
     loop: true,
     mode: "snap",
     renderMode: "performance",
-    slides: {
-      perView: 4,
-      spacing: 24, // spacing similar to screenshot
-    },
+    slides: { perView: 4, spacing: 24 },
     breakpoints: {
       "(max-width: 1200px)": { slides: { perView: 3, spacing: 20 } },
       "(max-width: 992px)": { slides: { perView: 2, spacing: 16 } },
@@ -54,24 +51,26 @@ const HotCollections = () => {
             <div className="hc-slider-wrap">
               <div ref={sliderRef} className="keen-slider hc-slider">
                 {collections.map((item, index) => (
-                  <div className="keen-slider__slide" key={index}>
+                  <div className="keen-slider__slide" key={item.id ?? index}>
                     <div className="hc-card">
+                      {/* Main image */}
                       <div className="hc-img-wrap">
                         <Link to="/item-details">
                           <img
                             src={item.nftImage || nftImage}
                             className="hc-img"
-                            alt={item.title || "Collection"}
+                            alt={item.title || "NFT collection"}
                           />
                         </Link>
                       </div>
 
+                      {/* Avatar overlapping */}
                       <div className="hc-avatar-row">
                         <Link to="/author" className="hc-avatar-link">
                           <img
-                            src={item.authorImage || AuthorImage}
                             className="hc-avatar"
-                            alt="Author"
+                            src={item.authorImage || AuthorImage}
+                            alt={item.title ? `${item.title} author` : "Author"}
                           />
                           <span className="hc-verified">
                             <i className="fa fa-check" />
@@ -79,6 +78,7 @@ const HotCollections = () => {
                         </Link>
                       </div>
 
+                      {/* Text */}
                       <div className="hc-info">
                         <Link to="/explore">
                           <h4 className="hc-title">{item.title}</h4>
@@ -90,7 +90,7 @@ const HotCollections = () => {
                 ))}
               </div>
 
-              {/* Overlay arrows (like screenshot) */}
+              {/* Overlay arrows like screenshot */}
               {loaded && instanceRef.current && (
                 <>
                   <button
@@ -121,4 +121,3 @@ const HotCollections = () => {
 };
 
 export default HotCollections;
-``
