@@ -2,6 +2,9 @@ import React from "react";
 import { Link } from "react-router-dom";
 import AuthorImage from "../../images/author_thumbnail.jpg";
 
+const API_URL =
+  "https://us-central1-nft-cloud-functions.cloudfunctions.net/topSellers";
+
 const TopSellers = () => {
   return (
     <section id="section-popular" className="pb-5">
