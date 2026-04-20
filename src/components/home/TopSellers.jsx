@@ -137,56 +137,7 @@ const TopSellers = () => {
                 ))}
             </ol>
 
-            {/* ✅ Skeleton CSS (scoped-ish) */}
-            <style>{`
-              .skeleton-item {
-                display: flex;
-                align-items: center;
-                gap: 14px;
-                padding: 10px 0;
-              }
-
-              .skeleton-avatar {
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-                background: linear-gradient(
-                  90deg,
-                  rgba(255,255,255,0.06) 25%,
-                  rgba(255,255,255,0.12) 37%,
-                  rgba(255,255,255,0.06) 63%
-                );
-                background-size: 400% 100%;
-                animation: skeletonShimmer 1.25s ease-in-out infinite;
-              }
-
-              .skeleton-line {
-                height: 12px;
-                border-radius: 6px;
-                margin: 6px 0;
-                background: linear-gradient(
-                  90deg,
-                  rgba(255,255,255,0.06) 25%,
-                  rgba(255,255,255,0.12) 37%,
-                  rgba(255,255,255,0.06) 63%
-                );
-                background-size: 400% 100%;
-                animation: skeletonShimmer 1.25s ease-in-out infinite;
-              }
-
-              .skeleton-line--name {
-                width: 160px;
-              }
-
-              .skeleton-line--sub {
-                width: 90px;
-              }
-
-              @keyframes skeletonShimmer {
-                0% { background-position: 100% 0; }
-                100% { background-position: 0 0; }
-              }
-            `}</style>
+           
           </div>
         </div>
       </div>
