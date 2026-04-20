@@ -22,7 +22,7 @@ const TopSellers = () => {
         setError("");
 
         const res = await fetch(API_URL);
-        {console.log(seller[0])};
+        
 
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status} ${res.statusText}`);
@@ -123,11 +123,7 @@ const TopSellers = () => {
 
                       <div className="author_list_info">
                         <Link to="/author">{getName(seller)}</Link>
-                        <span>
-                          {getEth(seller) !== null
-                            ? `${Number(getEth(seller)).toFixed(2)} ETH`
-                            : "— ETH"}
-                        </span>
+                        <span>{seller.price} ETH</span>
                       </div>
                     </li>
                   ))
