@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -16,9 +15,6 @@ window.$ = $;
 const API_URL =
   "https://us-central1-nft-cloud-functions.cloudfunctions.net/newItems";
 
-  
-
-
 function formatRemaining(msRemaining) {
   if (msRemaining == null) return "—";
   if (msRemaining <= 0) return "Ended";
@@ -31,16 +27,33 @@ function formatRemaining(msRemaining) {
   return `${hours}h ${minutes}m ${seconds}s`;
 }
 
+function getExpiryTime(item) {
+  if (item?.expiryDate) {
+    return item.expiryDate; // already in ms ✅
+  }
+
+  // fallback → 5h 30m 32s
+  const fallbackMs = 5 * 60 * 60 * 1000 + 30 * 60 * 1000 + 32 * 1000;
+
+  return Date.now() + fallbackMs;
+}
 
 const NewItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const countdownRefs = React.useRef([]);
 
   useEffect(() => {
     const fetchNewItems = async () => {
       try {
         const { data } = await axios.get(API_URL);
-        setItems(Array.isArray(data) ? data : []);
+
+        const normalized = (Array.isArray(data) ? data : []).map((item) => ({
+          ...item,
+          expiryTime: getExpiryTime(item),
+        }));
+
+        setItems(normalized);
       } catch (error) {
         console.error("Error fetching new items:", error);
         setItems([]);
@@ -51,6 +64,24 @@ const NewItems = () => {
 
     fetchNewItems();
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+
+      countdownRefs.current.forEach((el, index) => {
+        if (!el) return;
+
+        const item = items[index];
+        if (!item) return;
+
+        const remaining = item.expiryTime - now;
+        el.textContent = formatRemaining(remaining);
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [items]);
 
   const options = {
     loop: true,
@@ -135,8 +166,7 @@ const NewItems = () => {
                     const authorImage = item?.authorImage ?? "";
                     const authorName = item?.authorName ?? "Creator";
                     const countdown =
-                      item?.countdown ?? item?.endsIn ?? "5h 30m 32s";
-
+                      item?.countdown ?? item?.expiryDate ?? "5h 30m 32s";
                     return (
                       <div className="item" key={id}>
                         <div className="nft__item">
@@ -152,7 +182,12 @@ const NewItems = () => {
                             </Link>
                           </div>
 
-                          <div className="de_countdown">{countdown}</div>
+                          <div
+                            className="de_countdown"
+                            ref={(el) => (countdownRefs.current[index] = el)}
+                          >
+                            {formatRemaining(item.expiryTime - Date.now())}
+                          </div>
 
                           <div className="nft__item_wrap">
                             <div className="nft__item_extra">
@@ -163,7 +198,7 @@ const NewItems = () => {
                                   <h4>Share</h4>
 
                                   <a
-                                    href="#"
+                                    href="/#"
                                     onClick={(e) => e.preventDefault()}
                                     rel="noreferrer"
                                   >
@@ -171,7 +206,7 @@ const NewItems = () => {
                                   </a>
 
                                   <a
-                                    href="#"
+                                    href="/#"
                                     onClick={(e) => e.preventDefault()}
                                     rel="noreferrer"
                                   >
@@ -179,7 +214,7 @@ const NewItems = () => {
                                   </a>
 
                                   <a
-                                    href="#"
+                                    href="/#"
                                     onClick={(e) => e.preventDefault()}
                                     rel="noreferrer"
                                   >
