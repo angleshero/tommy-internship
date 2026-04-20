@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
 import OwlCarousel from "react-owl-carousel";
 import "owl.carousel/dist/assets/owl.carousel.css";
 import "owl.carousel/dist/assets/owl.theme.default.css";
@@ -18,38 +17,7 @@ const API_URL =
   "https://us-central1-nft-cloud-functions.cloudfunctions.net/newItems";
 
   
-function normalizeEndTime(item, nowMs, createdAtMs) {
-  // 1) Absolute timestamp fields (number)
-  const numeric =
-    item?.endTimestamp ??
-    item?.endTime ??
-    item?.endsAtTimestamp ??
-    item?.endsAtMs;
 
-  if (typeof numeric === "number" && Number.isFinite(numeric)) {
-    // If it's in seconds (10 digits-ish), convert to ms
-    const ms = numeric < 1e12 ? numeric * 1000 : numeric;
-    return ms;
-  }
-
-  // 2) Absolute date/time string fields
-  const dateStr = item?.endsAt ?? item?.endDate ?? item?.endTime ?? item?.endsOn;
-  if (typeof dateStr === "string" && dateStr.trim()) {
-    const parsed = Date.parse(dateStr);
-    if (!Number.isNaN(parsed)) return parsed;
-  }
-
-  // 3) Duration fields (seconds remaining). Convert to absolute end time.
-  const durationSec = item?.countdownSeconds ?? item?.remainingSeconds ?? item?.secondsLeft;
-  if (typeof durationSec === "number" && Number.isFinite(durationSec)) {
-    // Prefer locking duration to the fetch moment so it doesn't "reset" on re-render
-    const base = createdAtMs ?? nowMs;
-    return base + durationSec * 1000;
-  }
-
-  // Not found
-  return null;
-}
 
 function formatRemaining(msRemaining) {
   if (msRemaining == null) return "—";
