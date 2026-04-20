@@ -22,6 +22,7 @@ const TopSellers = () => {
         setError("");
 
         const res = await fetch(API_URL);
+        console.log(seller[0])
 
         if (!res.ok) {
           throw new Error(`Request failed: ${res.status} ${res.statusText}`);
