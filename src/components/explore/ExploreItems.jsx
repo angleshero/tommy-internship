@@ -200,16 +200,18 @@ const ExploreItems = () => {
                   </div>
                 </div>
 
-                <Link to="/item-details">
-                  <img
-                    src={item.image}
-                    className="lazy nft__item_preview"
-                    alt={item.title}
-                    onError={(e) => {
-                      e.currentTarget.src = nftFallback;
-                    }}
-                  />
-                </Link>
+                
+<Link to="/item-details">
+  <img
+    src={item.image}
+    className="lazy nft__item_preview"
+    alt={item.title}
+    onError={(e) => {
+      e.currentTarget.src = nftFallback;
+    }}
+  />
+</Link>
+
               </div>
 
               <div className="nft__item_info">
