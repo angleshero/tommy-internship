@@ -7,16 +7,57 @@ import nftFallback from "../../images/nftImage.jpg";
 const API_URL =
   "https://us-central1-nft-cloud-functions.cloudfunctions.net/explore";
 
+const INITIAL_VISIBLE = 8;
+const LOAD_MORE_STEP = 4;
 const SKELETON_COUNT = 8;
+
+/* ✅ Helper: always return expiry in milliseconds */
+function getExpiryTime(item) {
+  if (!item) return null;
+
+  // expiryDate already in ms
+  if (typeof item.expiryDate === "number") {
+    return item.expiryDate;
+  }
+
+  // expiryTime could be seconds or ms
+  if (typeof item.expiryTime === "number") {
+    return item.expiryTime < 10_000_000_000
+      ? item.expiryTime * 1000
+      : item.expiryTime;
+  }
+
+  // string date
+  if (typeof item.expiryDate === "string") {
+    const ms = new Date(item.expiryDate).getTime();
+    return isNaN(ms) ? null : ms;
+  }
+
+  // Date object
+  if (item.expiryDate instanceof Date) {
+    const ms = item.expiryDate.getTime();
+    return isNaN(ms) ? null : ms;
+  }
+
+  return null;
+}
 
 const ExploreItems = () => {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState("");
-  const [visibleCount, setVisibleCount] = useState(8);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ✅ Fetch explore items
+  // ✅ Option A: single global timer
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ✅ Fetch data
   useEffect(() => {
     const fetchExplore = async () => {
       try {
@@ -24,7 +65,7 @@ const ExploreItems = () => {
         setError("");
 
         const res = await fetch(API_URL);
-        if (!res.ok) throw new Error("Failed to fetch explore items");
+        if (!res.ok) throw new Error("Fetch failed");
 
         const data = await res.json();
         setItems(Array.isArray(data) ? data : []);
@@ -40,7 +81,7 @@ const ExploreItems = () => {
     fetchExplore();
   }, []);
 
-  // ✅ Normalize API data
+  // ✅ Normalize items
   const normalizedItems = useMemo(() => {
     return items.map((item, index) => ({
       id: item?.nftId ?? item?.id ?? index,
@@ -49,7 +90,7 @@ const ExploreItems = () => {
       authorImage: item?.authorImage || AuthorFallback,
       likes: Number(item?.likes ?? 0),
       price: Number(item?.price ?? 0),
-      expiry: item?.expiryDate ?? null,
+      expiryMs: getExpiryTime(item),
     }));
   }, [items]);
 
@@ -68,30 +109,48 @@ const ExploreItems = () => {
     }
   }, [normalizedItems, filter]);
 
+  // ✅ Reset visible count on filter change
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE);
+  }, [filter]);
+
   const visibleItems = sortedItems.slice(0, visibleCount);
 
   const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 8);
+    setVisibleCount((prev) => prev + LOAD_MORE_STEP);
   };
 
-  const formatCountdown = (expiry) => {
-    if (!expiry) return "5h 30m 32s";
-    const diff = expiry - Date.now();
-    if (diff <= 0) return "Ended";
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    return `${h}h ${m}m ${s}s`;
+  // ✅ Countdown formatting (nice UX)
+  const formatRemaining = (remainingMs) => {
+    if (remainingMs <= 0) return "Ended";
+
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+
+    return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(
+      2,
+      "0"
+    )}s`;
+  };
+
+  const getCountdownText = (expiryMs) => {
+    if (!expiryMs) return "No expiry";
+
+    const remaining = expiryMs - now;
+
+    // ✅ Nice UX: once ended, stop counting visually
+    if (remaining <= 0) return "Ended";
+
+    return formatRemaining(remaining);
   };
 
   return (
     <>
       {/* Filter */}
       <div>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
+        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">Default</option>
           <option value="price_low_to_high">Price, Low to High</option>
           <option value="price_high_to_low">Price, High to Low</option>
@@ -102,7 +161,7 @@ const ExploreItems = () => {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <div className="row">
-        {/* ✅ Loading skeletons */}
+        {/* ✅ Skeleton loaders */}
         {loading &&
           Array.from({ length: SKELETON_COUNT }).map((_, idx) => (
             <div
@@ -121,7 +180,7 @@ const ExploreItems = () => {
             </div>
           ))}
 
-        {/* ✅ Render items */}
+        {/* ✅ Items */}
         {!loading &&
           !error &&
           visibleItems.map((item) => (
@@ -145,9 +204,9 @@ const ExploreItems = () => {
                   </Link>
                 </div>
 
-                {/* Countdown */}
+                {/* ✅ Countdown */}
                 <div className="de_countdown">
-                  {formatCountdown(item.expiry)}
+                  {getCountdownText(item.expiryMs)}
                 </div>
 
                 {/* NFT image */}
@@ -204,3 +263,4 @@ const ExploreItems = () => {
 };
 
 export default ExploreItems;
+``
