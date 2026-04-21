@@ -15,7 +15,7 @@ const ExploreItems = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 1) Fetch items from API
+  // Fetch explore items
   useEffect(() => {
     let isMounted = true;
 
@@ -30,15 +30,15 @@ const ExploreItems = () => {
         }
 
         const data = await res.json();
-
-        // Some APIs return {data:[...]} others return [...]
         const list = Array.isArray(data) ? data : data?.data || [];
 
         if (isMounted) {
           setItems(list);
         }
       } catch (err) {
-        if (isMounted) setError(err.message || "Failed to load explore items.");
+        if (isMounted) {
+          setError(err.message || "Failed to load explore items.");
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -51,28 +51,25 @@ const ExploreItems = () => {
     };
   }, []);
 
-  // 2) Normalize fields from API safely
+  // Normalize API data
   const normalizedItems = useMemo(() => {
     return items.map((item, idx) => {
-      // common field guesses — adjust if your API uses different names
-      const title = item?.title || item?.name || item?.nftName || "Untitled";
+      const title = item?.title || item?.name || "Untitled";
+
       const image =
         item?.image ||
         item?.imageUrl ||
-        item?.nftImage ||
         item?.cover ||
         nftFallback;
 
       const likes = Number(item?.likes ?? item?.likeCount ?? 0);
 
-      // price might come as "1.74", 1.74, or "1.74 ETH"
       const rawPrice = item?.price ?? item?.eth ?? item?.amount ?? "0";
       const price =
         typeof rawPrice === "string"
           ? parseFloat(rawPrice.replace(/[^\d.]/g, "")) || 0
           : Number(rawPrice) || 0;
 
-      // countdown / expiry might be expiryDate/endDate/expiration
       const expiry =
         item?.expiryDate ||
         item?.endDate ||
@@ -80,14 +77,21 @@ const ExploreItems = () => {
         item?.expiresAt ||
         null;
 
-      // Use id if present, otherwise fallback stable-ish key
-      const id = item?.id || item?._id || item?.tokenId || `${title}-${idx}`;
+      const id = item?.id || item?._id || `${title}-${idx}`;
 
-      return { ...item, id, title, image, likes, price, expiry };
+      return {
+        id,
+        title,
+        image,
+        likes,
+        price,
+        expiry,
+        authorImage: item?.authorImage || AuthorImage,
+      };
     });
   }, [items]);
 
-  // 3) Sort according to dropdown
+  // Sorting
   const sortedItems = useMemo(() => {
     const arr = [...normalizedItems];
 
@@ -103,7 +107,7 @@ const ExploreItems = () => {
     }
   }, [normalizedItems, filter]);
 
-  // 4) Only show a chunk (Load more)
+  // Load more logic
   const visibleItems = useMemo(() => {
     return sortedItems.slice(0, visibleCount);
   }, [sortedItems, visibleCount]);
@@ -113,7 +117,7 @@ const ExploreItems = () => {
     setVisibleCount((prev) => prev + 8);
   };
 
-  // Optional: basic countdown display if expiry exists
+  // Countdown formatter
   const formatCountdown = (expiry) => {
     if (!expiry) return "—";
 
@@ -146,32 +150,32 @@ const ExploreItems = () => {
         </select>
       </div>
 
-      {/* Loading / Error states */}
-      {loading && (
-        <div className="col-12 py-4">
-          <p>Loading explore items...</p>
-        </div>
-      )}
-
+      {loading && <p className="col-12 py-4">Loading explore items...</p>}
       {!loading && error && (
-        <div className="col-12 py-4">
-          <p style={{ color: "red" }}>Error: {error}</p>
-        </div>
+        <p className="col-12 py-4" style={{ color: "red" }}>
+          Error: {error}
+        </p>
       )}
 
-      {/* Items */}
       {!loading &&
         !error &&
         visibleItems.map((item) => (
           <div
             key={item.id}
             className="d-item col-lg-3 col-md-6 col-sm-6 col-xs-12"
-            style={{ display: "block", backgroundSize: "cover" }}
           >
             <div className="nft__item">
+              {/* Author */}
               <div className="author_list_pp">
-                <Link to="/author" data-bs-toggle="tooltip" data-bs-placement="top">
-                  {AuthorImage}
+                <Link to="/author">
+                  <img
+                    src={item.authorImage}
+                    alt="Author"
+                    className="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = AuthorImage;
+                    }}
+                  />
                   <i className="fa fa-check"></i>
                 </Link>
               </div>
@@ -181,39 +185,21 @@ const ExploreItems = () => {
                 {item.expiry ? formatCountdown(item.expiry) : "5h 30m 32s"}
               </div>
 
+              {/* NFT Image */}
               <div className="nft__item_wrap">
-                <div className="nft__item_extra">
-                  <div className="nft__item_buttons">
-                    <button>Buy Now</button>
-                    <div className="nft__item_share">
-                      <h4>Share</h4>
-                      <a href="" target="_blank" rel="noreferrer">
-                        <i className="fa fa-facebook fa-lg"></i>
-                      </a>
-                      <a href="" target="_blank" rel="noreferrer">
-                        <i className="fa fa-twitter fa-lg"></i>
-                      </a>
-                      <a href="">
-                        <i className="fa fa-envelope fa-lg"></i>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                
-  <Link to="/item-details">
-  <img
-    src={item.image}
-    className="lazy nft__item_preview"
-    alt={item.title}
-    onError={(e) => {
-      e.currentTarget.src = nftFallback;
-    }}
-  />
-</Link>
-
+                <Link to="/item-details">
+                  <img
+                    src={item.image}
+                    className="lazy nft__item_preview"
+                    alt={item.title}
+                    onError={(e) => {
+                      e.currentTarget.src = nftFallback;
+                    }}
+                  />
+                </Link>
               </div>
 
+              {/* Info */}
               <div className="nft__item_info">
                 <Link to="/item-details">
                   <h4>{item.title}</h4>
@@ -232,11 +218,15 @@ const ExploreItems = () => {
           </div>
         ))}
 
-      {/* Load more */}
       {!loading && !error && (
         <div className="col-md-12 text-center">
           {visibleCount < sortedItems.length ? (
-            <Link to="" id="loadmore" className="btn-main lead" onClick={handleLoadMore}>
+            <Link
+              to=""
+              id="loadmore"
+              className="btn-main lead"
+              onClick={handleLoadMore}
+            >
               Load more
             </Link>
           ) : (
