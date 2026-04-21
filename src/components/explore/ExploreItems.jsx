@@ -171,7 +171,7 @@ const ExploreItems = () => {
             <div className="nft__item">
               <div className="author_list_pp">
                 <Link to="/author" data-bs-toggle="tooltip" data-bs-placement="top">
-                  <img className="lazy" src={AuthorImage} alt="" />
+                  {AuthorImage}
                   <i className="fa fa-check"></i>
                 </Link>
               </div>
@@ -201,7 +201,7 @@ const ExploreItems = () => {
                 </div>
 
                 
-<Link to="/item-details">
+  <Link to="/item-details">
   <img
     src={item.image}
     className="lazy nft__item_preview"
@@ -249,4 +249,3 @@ const ExploreItems = () => {
 };
 
 export default ExploreItems;
-``
