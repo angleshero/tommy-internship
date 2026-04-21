@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import AuthorImage from "../../images/author_thumbnail.jpg";
+import AuthorFallback from "../../images/author_thumbnail.jpg";
 import nftFallback from "../../images/nftImage.jpg";
 
 const API_URL =
@@ -16,16 +16,22 @@ const ExploreItems = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch API
+  // ✅ Fetch explore items
   useEffect(() => {
     const fetchExplore = async () => {
       try {
         setLoading(true);
+        setError("");
+
         const res = await fetch(API_URL);
+        if (!res.ok) throw new Error("Failed to fetch explore items");
+
         const data = await res.json();
-        setItems(Array.isArray(data) ? data : data?.data || []);
+        setItems(Array.isArray(data) ? data : []);
       } catch (err) {
+        console.error(err);
         setError("Failed to load explore items.");
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -34,26 +40,20 @@ const ExploreItems = () => {
     fetchExplore();
   }, []);
 
-  // Normalize API data
+  // ✅ Normalize API data
   const normalizedItems = useMemo(() => {
-    return items.map((item, index) => {
-      const rawPrice = item?.price ?? item?.eth ?? "0";
-
-      return {
-        id: item?.id || item?._id || index,
-        title: item?.title || item?.name || "Untitled",
-        image: item?.image || item?.imageUrl || item?.cover || nftFallback,
-        likes: Number(item?.likes ?? item?.likeCount ?? 0),
-        price:
-          typeof rawPrice === "string"
-            ? parseFloat(rawPrice.replace(/[^\d.]/g, "")) || 0
-            : Number(rawPrice) || 0,
-        expiry: item?.expiryDate || item?.endDate || item?.expiration || null,
-      };
-    });
+    return items.map((item, index) => ({
+      id: item?.nftId ?? item?.id ?? index,
+      title: item?.title || "Untitled",
+      image: item?.nftImage || nftFallback,
+      authorImage: item?.authorImage || AuthorFallback,
+      likes: Number(item?.likes ?? 0),
+      price: Number(item?.price ?? 0),
+      expiry: item?.expiryDate ?? null,
+    }));
   }, [items]);
 
-  // Sorting
+  // ✅ Sorting
   const sortedItems = useMemo(() => {
     const arr = [...normalizedItems];
     switch (filter) {
@@ -70,14 +70,13 @@ const ExploreItems = () => {
 
   const visibleItems = sortedItems.slice(0, visibleCount);
 
-  const handleLoadMore = (e) => {
-    e.preventDefault();
+  const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 8);
   };
 
   const formatCountdown = (expiry) => {
     if (!expiry) return "5h 30m 32s";
-    const diff = new Date(expiry) - Date.now();
+    const diff = expiry - Date.now();
     if (diff <= 0) return "Ended";
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
@@ -87,9 +86,9 @@ const ExploreItems = () => {
 
   return (
     <>
+      {/* Filter */}
       <div>
         <select
-          id="filter-items"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         >
@@ -102,98 +101,102 @@ const ExploreItems = () => {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* Skeleton loaders */}
-      {loading &&
-        new Array(SKELETON_COUNT).fill(0).map((_, idx) => (
-          <div
-            key={idx}
-            className="d-item col-lg-3 col-md-6 col-sm-6 col-xs-12"
-          >
-            <div className="nft__item">
-              <div className="skeleton skeleton-img"></div>
-
-              <div className="nft__item_info">
-                <div className="skeleton skeleton-text"></div>
-                <div className="skeleton skeleton-text short"></div>
-                <div className="skeleton skeleton-text tiny"></div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-      {/* Real items */}
-      {!loading &&
-        !error &&
-        visibleItems.map((item) => (
-          <div
-            key={item.id}
-            className="d-item col-lg-3 col-md-6 col-sm-6 col-xs-12"
-          >
-            <div className="nft__item">
-              {/* Author */}
-              <div className="author_list_pp">
-                <Link to="/author">
-                  <img
-                    src={AuthorImage}
-                    alt="author"
-                    onError={(e) => {
-                      e.currentTarget.src = AuthorImage;
-                    }}
-                  />
-                  <i className="fa fa-check"></i>
-                </Link>
-              </div>
-
-              {/* Countdown */}
-              <div className="de_countdown">
-                {formatCountdown(item.expiry)}
-              </div>
-
-              {/* NFT Image */}
-              <div className="nft__item_wrap">
-                <Link to="/item-details">
-                  <img
-                    src={item.image}
-                    className="lazy nft__item_preview"
-                    alt={item.title}
-                    onError={(e) => {
-                      e.currentTarget.src = nftFallback;
-                    }}
-                  />
-                </Link>
-              </div>
-
-              {/* Info */}
-              <div className="nft__item_info">
-                <Link to="/item-details">
-                  <h4>{item.title}</h4>
-                </Link>
-
-                <div className="nft__item_price">
-                  {item.price.toFixed(2)} ETH
-                </div>
-
-                <div className="nft__item_like">
-                  <i className="fa fa-heart"></i>
-                  <span>{item.likes}</span>
+      <div className="row">
+        {/* ✅ Loading skeletons */}
+        {loading &&
+          Array.from({ length: SKELETON_COUNT }).map((_, idx) => (
+            <div
+              key={idx}
+              className="col-lg-3 col-md-6 col-sm-6 col-xs-12"
+              style={{ marginBottom: 24 }}
+            >
+              <div className="nft__item">
+                <div className="skeleton skeleton-img" />
+                <div className="nft__item_info">
+                  <div className="skeleton skeleton-text" />
+                  <div className="skeleton skeleton-text short" />
+                  <div className="skeleton skeleton-text tiny" />
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-      {!loading && !error && (
-        <div className="col-md-12 text-center">
-          {visibleCount < sortedItems.length && (
-            <Link
-              to=""
-              id="loadmore"
+        {/* ✅ Render items */}
+        {!loading &&
+          !error &&
+          visibleItems.map((item) => (
+            <div
+              key={item.id}
+              className="col-lg-3 col-md-6 col-sm-6 col-xs-12"
+              style={{ marginBottom: 24 }}
+            >
+              <div className="nft__item">
+                {/* Author */}
+                <div className="author_list_pp">
+                  <Link to="/author">
+                    <img
+                      src={item.authorImage}
+                      alt="author"
+                      onError={(e) =>
+                        (e.currentTarget.src = AuthorFallback)
+                      }
+                    />
+                    <i className="fa fa-check" />
+                  </Link>
+                </div>
+
+                {/* Countdown */}
+                <div className="de_countdown">
+                  {formatCountdown(item.expiry)}
+                </div>
+
+                {/* NFT image */}
+                <div className="nft__item_wrap">
+                  <Link to={`/item-details/${item.id}`}>
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="nft__item_preview"
+                      loading="lazy"
+                      onError={(e) =>
+                        (e.currentTarget.src = nftFallback)
+                      }
+                    />
+                  </Link>
+                </div>
+
+                {/* Info */}
+                <div className="nft__item_info">
+                  <Link to={`/item-details/${item.id}`}>
+                    <h4>{item.title}</h4>
+                  </Link>
+
+                  <div className="nft__item_price">
+                    {item.price.toFixed(2)} ETH
+                  </div>
+
+                  <div className="nft__item_like">
+                    <i className="fa fa-heart" />
+                    <span>{item.likes}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+      </div>
+
+      {/* ✅ Load more */}
+      {!loading && !error && visibleCount < sortedItems.length && (
+        <div className="row">
+          <div className="col-md-12 text-center">
+            <button
               className="btn-main lead"
+              type="button"
               onClick={handleLoadMore}
             >
               Load more
-            </Link>
-          )}
+            </button>
+          </div>
         </div>
       )}
     </>
@@ -201,4 +204,3 @@ const ExploreItems = () => {
 };
 
 export default ExploreItems;
-``
