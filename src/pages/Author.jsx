@@ -8,6 +8,7 @@ import AuthorImageFallback from "../images/author_thumbnail.jpg";
 
 const DEFAULT_AUTHOR_ID = 73855012;
 
+// Read query params (?author=)
 function useQuery() {
   const { search } = useLocation();
   return useMemo(() => new URLSearchParams(search), [search]);
@@ -16,11 +17,10 @@ function useQuery() {
 const Author = () => {
   const query = useQuery();
 
-  // If you also support /author/:authorId, AuthorItems or Author route params can be added later.
-  // For now, this reads from query as you previously had:
-  const authorId = query.get("author") || String(DEFAULT_AUTHOR_ID);
+  // Initial author id (used only to fetch)
+  const initialAuthorId = query.get("author") || String(DEFAULT_AUTHOR_ID);
 
-  const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
+  const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${initialAuthorId}`;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,53 +30,50 @@ const Author = () => {
   const [isFollowed, setIsFollowed] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
 
-  // Prevent dev-mode/StrictMode double-trigger issues
+  // Prevent StrictMode double-click issue
   const followClickLockRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
 
-    const fetchAuthor = async () => {
+    async function fetchAuthor() {
       try {
         setLoading(true);
         setError("");
 
         const res = await fetch(API_URL, { signal: controller.signal });
         if (!res.ok) {
-          throw new Error(`Request failed: ${res.status} ${res.statusText}`);
+          throw new Error(`Request failed: ${res.status}`);
         }
 
         const data = await res.json();
 
         if (isMounted) {
-          setAuthor(data && typeof data === "object" ? data : null);
-
-          const baseFollowers = Number(data?.followers ?? 0) || 0;
-          setFollowersCount(baseFollowers);
+          setAuthor(data);
+          setFollowersCount(Number(data?.followers ?? 0));
           setIsFollowed(false);
         }
       } catch (err) {
-        if (isMounted && err?.name !== "AbortError") {
+        if (isMounted && err.name !== "AbortError") {
           console.error(err);
-          setError(err?.message || "Failed to load author.");
+          setError("Failed to load author.");
           setAuthor(null);
           setFollowersCount(0);
-          setIsFollowed(false);
         }
       } finally {
         if (isMounted) setLoading(false);
       }
-    };
+    }
 
     fetchAuthor();
-
     return () => {
       isMounted = false;
       controller.abort();
     };
   }, [API_URL]);
 
+  // ✅ Correct follow toggle (no double increment)
   const onToggleFollow = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -97,124 +94,83 @@ const Author = () => {
   };
 
   const onCopy = async () => {
-    const address = author?.address;
-    if (!address) return;
-
-    try {
-      await navigator.clipboard.writeText(address);
-    } catch (e) {
-      console.error("Copy failed", e);
-    }
+    if (!author?.address) return;
+    await navigator.clipboard.writeText(author.address);
   };
 
-  const authorName =
-    author?.authorName || (loading ? "Loading..." : "Unknown Author");
+  // ✅ All UI values come DIRECTLY from API
+  const authorId = author?.authorId;
+  const authorName = author?.authorName || (loading ? "Loading..." : "Unknown Author");
   const tag = author?.tag ? `@${author.tag}` : "";
   const address = author?.address || "";
   const authorImage = author?.authorImage || AuthorImageFallback;
 
-  // ✅ THIS is the ONLY allowed author link per your request:
-  const authorLink = `/author/${author?.authorId ?? authorId}`;
+  // ✅ Author link ALWAYS uses API authorId
+  const authorLink = authorId ? `/author/${authorId}` : "#";
 
   return (
     <div id="wrapper">
       <div className="no-bottom no-top" id="content">
-        <div id="top"></div>
-
         <section
           id="profile_banner"
-          aria-label="section"
           className="text-light"
-          data-bgimage="url(images/author_banner.jpg) top"
           style={{ background: `url(${AuthorBanner}) top` }}
-        ></section>
+        />
 
-        <section aria-label="section">
+        <section>
           <div className="container">
-            {/* Error message */}
-            {error && !loading ? (
-              <div className="row">
-                <div className="col-md-12">
-                  <div className="alert alert-danger" role="alert">
-                    {error}
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            {error && !loading && (
+              <div className="alert alert-danger">{error}</div>
+            )}
 
-            <div className="row">
-              <div className="col-md-12">
-                <div className="d_profile de-flex">
-                  <div className="de-flex-col">
-                    <div className="profile_avatar">
-                      {/* ✅ Avatar links to /author/${authorId} */}
-                      <Link to={authorLink} title="View author">
-                        <img
-                          src={authorImage}
-                          alt={authorName}
-                          onError={(e) => {
-                            e.currentTarget.src = AuthorImageFallback;
-                          }}
-                        />
-                        <i className="fa fa-check"></i>
-                      </Link>
+            <div className="d_profile de-flex">
+              <div className="de-flex-col">
+                <div className="profile_avatar">
+                  <Link to={authorLink}>
+                    <img
+                      src={authorImage}
+                      alt={authorName}
+                      onError={(e) =>
+                        (e.currentTarget.src = AuthorImageFallback)
+                      }
+                    />
+                    <i className="fa fa-check" />
+                  </Link>
 
-                      <div className="profile_name">
-                        <h4>
-                          {/* ✅ Name links to /author/${authorId} */}
-                          <Link to={authorLink} style={{ textDecoration: "none" }}>
-                            {authorName}
-                          </Link>
-
-                          {tag ? (
-                            <span className="profile_username">
-                              {/* ✅ Username links to /author/${authorId} */}
-                              <Link to={authorLink} style={{ textDecoration: "none" }}>
-                                {tag}
-                              </Link>
-                            </span>
-                          ) : null}
-
-                          {address ? (
-                            <span id="wallet" className="profile_wallet">
-                              {address}
-                            </span>
-                          ) : null}
-
-                          <button id="btn_copy" title="Copy Text" onClick={onCopy}>
-                            Copy
-                          </button>
-                        </h4>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Follow panel (top-right) */}
-                  <div className="profile_follow de-flex">
-                    <div className="de-flex-col">
-                      <div className="profile_follower">
-                        {loading ? "Loading..." : `${followersCount} followers`}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn-main"
-                        onClick={onToggleFollow}
-                        style={{ border: "none" }}
-                      >
-                        {isFollowed ? "Following" : "Follow"}
+                  <div className="profile_name">
+                    <h4>
+                      <Link to={authorLink}>{authorName}</Link>
+                      {tag && <span className="profile_username">{tag}</span>}
+                      {address && (
+                        <span className="profile_wallet">{address}</span>
+                      )}
+                      <button id="btn_copy" onClick={onCopy}>
+                        Copy
                       </button>
-                    </div>
+                    </h4>
                   </div>
                 </div>
               </div>
 
-              {/* Tabs / AuthorItems */}
-              <div className="col-md-12">
-                <div className="de_tab tab_simple">
-                  <AuthorItems />
+              <div className="profile_follow de-flex">
+                <div className="de-flex-col">
+                  <div className="profile_follower">
+                    {loading ? "Loading..." : `${followersCount} followers`}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-main"
+                    onClick={onToggleFollow}
+                  >
+                    {isFollowed ? "Following" : "Follow"}
+                  </button>
                 </div>
               </div>
+            </div>
+
+            <div className="de_tab tab_simple">
+              <AuthorItems />
             </div>
           </div>
         </section>
@@ -224,3 +180,4 @@ const Author = () => {
 };
 
 export default Author;
+
