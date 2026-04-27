@@ -23,7 +23,7 @@ const Author = () => {
 
   useEffect(() => {
     // ✅ HARD GUARD — never fetch without ID
-    if (!authorId) {
+    if (!id) {
       setError("Invalid author URL.");
       setLoading(false);
       return;
@@ -32,7 +32,7 @@ const Author = () => {
     let isMounted = true;
     const controller = new AbortController();
 
-    const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
+    const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${id}`;
 
     async function fetchAuthor() {
       try {
@@ -65,7 +65,7 @@ const Author = () => {
       isMounted = false;
       controller.abort();
     };
-  }, [authorId]);
+  }, [id]);
 
   const onToggleFollow = () => {
     if (followClickLockRef.current) return;
@@ -116,7 +116,7 @@ const Author = () => {
                 <div className="d_profile de-flex">
                   <div className="de-flex-col">
                     <div className="profile_avatar">
-                      <Link to={`/author/${authorId}`}>
+                      <Link to={`/author/${id}`}>
                         <img
                           src={author.authorImage || AuthorImageFallback}
                           alt={author.authorName}
@@ -163,7 +163,7 @@ const Author = () => {
 
                 {/* ✅ AuthorItems gets authorId from API */}
                 <div className="de_tab tab_simple">
-                  <AuthorItems authorId={author.authorId} />
+                  <AuthorItems id={author.id} />
                 </div>
               </>
             )}
