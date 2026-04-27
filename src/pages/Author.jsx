@@ -7,14 +7,8 @@ import AuthorItems from "../components/author/AuthorItems";
 import AuthorImageFallback from "../images/author_thumbnail.jpg";
 
 const Author = () => {
+  // ✅ ALWAYS call hooks first
   const { authorId } = useParams();
-
-  // ✅ HARD GUARD: never render without a valid authorId
-  if (!authorId) {
-    return <Navigate to="/" replace />;
-  }
-
-  const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,8 +20,17 @@ const Author = () => {
   const followClickLockRef = useRef(false);
 
   useEffect(() => {
+    // ✅ Guard INSIDE the effect (safe)
+    if (!authorId) {
+      setError("Invalid author.");
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     const controller = new AbortController();
+
+    const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
 
     async function fetchAuthor() {
       try {
@@ -35,7 +38,7 @@ const Author = () => {
         setError("");
 
         const res = await fetch(API_URL, { signal: controller.signal });
-        if (!res.ok) throw new Error("Request failed");
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
 
         const data = await res.json();
 
@@ -46,8 +49,10 @@ const Author = () => {
         }
       } catch (err) {
         if (isMounted && err.name !== "AbortError") {
+          console.error(err);
           setError("Failed to load author.");
           setAuthor(null);
+          setFollowersCount(0);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -55,12 +60,14 @@ const Author = () => {
     }
 
     fetchAuthor();
+
     return () => {
       isMounted = false;
       controller.abort();
     };
-  }, [authorId, API_URL]);
+  }, [authorId]);
 
+  // ✅ Follow toggle (StrictMode-safe)
   const onToggleFollow = () => {
     if (followClickLockRef.current) return;
     followClickLockRef.current = true;
@@ -83,10 +90,16 @@ const Author = () => {
     }
   };
 
+  // ✅ Safe derived values
   const authorName = author?.authorName || "Loading...";
   const tag = author?.tag ? `@${author.tag}` : "";
   const address = author?.address || "";
   const authorImage = author?.authorImage || AuthorImageFallback;
+
+  // ✅ Render fallback AFTER hooks
+  if (!authorId) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div id="wrapper">
@@ -99,7 +112,9 @@ const Author = () => {
 
         <section>
           <div className="container">
-            {error && <div className="alert alert-danger">{error}</div>}
+            {error && !loading && (
+              <div className="alert alert-danger">{error}</div>
+            )}
 
             {!loading && author && (
               <div className="d_profile de-flex">
@@ -119,7 +134,9 @@ const Author = () => {
                     <div className="profile_name">
                       <h4>
                         {authorName}
-                        {tag && <span className="profile_username">{tag}</span>}
+                        {tag && (
+                          <span className="profile_username">{tag}</span>
+                        )}
                         {address && (
                           <span className="profile_wallet">{address}</span>
                         )}
@@ -137,7 +154,11 @@ const Author = () => {
                       {followersCount} followers
                     </div>
 
-                    <button className="btn-main" onClick={onToggleFollow}>
+                    <button
+                      type="button"
+                      className="btn-main"
+                      onClick={onToggleFollow}
+                    >
                       {isFollowed ? "Following" : "Follow"}
                     </button>
                   </div>
@@ -145,7 +166,7 @@ const Author = () => {
               </div>
             )}
 
-            {/* ✅ PASS authorId CORRECTLY */}
+            {/* ✅ Pass authorId correctly */}
             {!loading && author && (
               <div className="de_tab tab_simple">
                 <AuthorItems authorId={author.authorId} />
@@ -159,4 +180,3 @@ const Author = () => {
 };
 
 export default Author;
-
