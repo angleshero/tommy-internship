@@ -15,21 +15,22 @@ const AuthorItems = ({ id }) => {
 
     const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${id}`;
 
-    const fetchItems = async () => {
-      try {
-        setLoading(true);
+   const fetchItems = async () => {
+  try {
+    setLoading(true);
 
-        const res = await fetch(API_URL);
-        const data = await res.json();
+    const res = await fetch(API_URL);
+    const data = await res.json();
 
-        setAuthorImage(data?.authorImage || AuthorImageFallback);
-        setItems(Array.isArray(data?.nftCollection) ? data.nftCollection : []);
-      } catch (err) {
-        console.error(err);
-        setItems([]);
-      } finally {
-        setLoading(false); 
-    };
+    setAuthorImage(data?.authorImage || AuthorImageFallback);
+    setItems(Array.isArray(data?.nftCollection) ? data.nftCollection : []);
+  } catch (err) {
+    console.error(err);
+    setItems([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
     fetchItems();
   }, [id]);

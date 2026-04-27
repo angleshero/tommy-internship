@@ -161,9 +161,9 @@ const Author = () => {
                   </div>
                 </div>
 
-                {/* ✅ AuthorItems gets authorId from API */}
+                
                 <div className="de_tab tab_simple">
-                  <AuthorItems id={author.id} />
+                  <AuthorItems id={id} />
                 </div>
               </>
             )}
