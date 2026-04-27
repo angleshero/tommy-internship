@@ -1,6 +1,6 @@
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import AuthorBanner from "../images/author_banner.jpg";
 import AuthorItems from "../components/author/AuthorItems";
@@ -16,7 +16,7 @@ function useQuery() {
 const Author = () => {
   const query = useQuery();
 
-  // ✅ Works with your current route:
+  // ✅ Works with your existing App.jsx route:
   // /author?author=73855012
   const authorId = query.get("author") || String(DEFAULT_AUTHOR_ID);
 
@@ -30,6 +30,9 @@ const Author = () => {
   // Follow UI state
   const [isFollowed, setIsFollowed] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
+
+  // ✅ Prevent dev-mode/StrictMode double-trigger issues
+  const followClickLockRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -56,7 +59,7 @@ const Author = () => {
           setIsFollowed(false);
         }
       } catch (err) {
-        if (isMounted && err.name !== "AbortError") {
+        if (isMounted && err?.name !== "AbortError") {
           console.error(err);
           setError(err?.message || "Failed to load author.");
           setAuthor(null);
@@ -76,23 +79,31 @@ const Author = () => {
     };
   }, [API_URL]);
 
-  // ✅ Follow toggles +1 then -1 (never below 0)
+  // ✅ Follow toggles +1 then -1 — guarded to prevent double-fire in dev
   const onToggleFollow = (e) => {
-    e.preventDefault(); // because the button is inside a Link-like area
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Ignore duplicate trigger in development
+    if (followClickLockRef.current) return;
+    followClickLockRef.current = true;
+
     setIsFollowed((prev) => {
       setFollowersCount((count) => (prev ? Math.max(0, count - 1) : count + 1));
       return !prev;
     });
-  };
 
-  const authorName = author?.authorName || (loading ? "Loading..." : "Unknown Author");
-  const tag = author?.tag ? `@${author.tag}` : "";
-  const address = author?.address || "";
-  const authorImage = author?.authorImage || AuthorImageFallback;
+    // Release lock next tick
+    setTimeout(() => {
+      followClickLockRef.current = false;
+    }, 0);
+  };
 
   // Copy wallet to clipboard
   const onCopy = async () => {
+    const address = author?.address;
     if (!address) return;
+
     try {
       await navigator.clipboard.writeText(address);
       // optional: toast/alert
@@ -101,6 +112,11 @@ const Author = () => {
       console.error("Copy failed", e);
     }
   };
+
+  const authorName = author?.authorName || (loading ? "Loading..." : "Unknown Author");
+  const tag = author?.tag ? `@${author.tag}` : "";
+  const address = author?.address || "";
+  const authorImage = author?.authorImage || AuthorImageFallback;
 
   return (
     <div id="wrapper">
@@ -146,9 +162,11 @@ const Author = () => {
                       <div className="profile_name">
                         <h4>
                           {authorName}
-                          {tag ? <span className="profile_username">{tag}</span> : null}
 
-                          {/* wallet */}
+                          {tag ? (
+                            <span className="profile_username">{tag}</span>
+                          ) : null}
+
                           {address ? (
                             <span id="wallet" className="profile_wallet">
                               {address}
@@ -170,10 +188,15 @@ const Author = () => {
                         {loading ? "Loading..." : `${followersCount} followers`}
                       </div>
 
-                      {/* Keep Link styling but make it behave like a button */}
-                      <Link to="#" className="btn-main" onClick={onToggleFollow}>
+                      {/* ✅ Use a real button (not Link) + guard to prevent double increments */}
+                      <button
+                        type="button"
+                        className="btn-main"
+                        onClick={onToggleFollow}
+                        style={{ border: "none" }}
+                      >
                         {isFollowed ? "Following" : "Follow"}
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -182,12 +205,8 @@ const Author = () => {
               {/* Tabs / AuthorItems */}
               <div className="col-md-12">
                 <div className="de_tab tab_simple">
-                  {/* Option A: Leave AuthorItems to fetch itself */}
+                  {/* AuthorItems reads authorId from URL query too (/author?author=...) */}
                   <AuthorItems />
-
-                  {/* Option B (recommended): pass authorId so AuthorItems fetches the SAME author
-                      <AuthorItems authorId={authorId} />
-                  */}
                 </div>
               </div>
             </div>
@@ -199,4 +218,3 @@ const Author = () => {
 };
 
 export default Author;
-
