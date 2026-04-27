@@ -28,8 +28,7 @@ const AuthorItems = ({ id }) => {
         console.error(err);
         setItems([]);
       } finally {
-        setLoading(false);
-      }
+        setLoading(false); 
     };
 
     fetchItems();
