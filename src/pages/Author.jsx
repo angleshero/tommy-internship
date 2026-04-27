@@ -1,13 +1,12 @@
 
 import React, { useEffect, useRef, useState } from "react";
-import { Link, useParams, Navigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import AuthorBanner from "../images/author_banner.jpg";
 import AuthorItems from "../components/author/AuthorItems";
 import AuthorImageFallback from "../images/author_thumbnail.jpg";
 
 const Author = () => {
-  // ✅ ALWAYS call hooks first
   const { authorId } = useParams();
 
   const [loading, setLoading] = useState(true);
@@ -20,9 +19,9 @@ const Author = () => {
   const followClickLockRef = useRef(false);
 
   useEffect(() => {
-    // ✅ Guard INSIDE the effect (safe)
+    // ✅ HARD GUARD — never fetch without ID
     if (!authorId) {
-      setError("Invalid author.");
+      setError("Invalid author URL.");
       setLoading(false);
       return;
     }
@@ -52,7 +51,6 @@ const Author = () => {
           console.error(err);
           setError("Failed to load author.");
           setAuthor(null);
-          setFollowersCount(0);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -60,14 +58,12 @@ const Author = () => {
     }
 
     fetchAuthor();
-
     return () => {
       isMounted = false;
       controller.abort();
     };
   }, [authorId]);
 
-  // ✅ Follow toggle (StrictMode-safe)
   const onToggleFollow = () => {
     if (followClickLockRef.current) return;
     followClickLockRef.current = true;
@@ -90,15 +86,13 @@ const Author = () => {
     }
   };
 
-  // ✅ Safe derived values
-  const authorName = author?.authorName || "Loading...";
-  const tag = author?.tag ? `@${author.tag}` : "";
-  const address = author?.address || "";
-  const authorImage = author?.authorImage || AuthorImageFallback;
-
-  // ✅ Render fallback AFTER hooks
-  if (!authorId) {
-    return <Navigate to="/" replace />;
+  // ✅ Render error clearly (instead of broken UI)
+  if (error && !loading) {
+    return (
+      <div className="container" style={{ padding: "40px 0" }}>
+        <div className="alert alert-danger">{error}</div>
+      </div>
+    );
   }
 
   return (
@@ -112,65 +106,63 @@ const Author = () => {
 
         <section>
           <div className="container">
-            {error && !loading && (
-              <div className="alert alert-danger">{error}</div>
-            )}
+            {loading && <div>Loading author...</div>}
 
             {!loading && author && (
-              <div className="d_profile de-flex">
-                <div className="de-flex-col">
-                  <div className="profile_avatar">
-                    <Link to={`/author/${authorId}`}>
-                      <img
-                        src={authorImage}
-                        alt={authorName}
-                        onError={(e) =>
-                          (e.currentTarget.src = AuthorImageFallback)
-                        }
-                      />
-                      <i className="fa fa-check" />
-                    </Link>
-
-                    <div className="profile_name">
-                      <h4>
-                        {authorName}
-                        {tag && (
-                          <span className="profile_username">{tag}</span>
-                        )}
-                        {address && (
-                          <span className="profile_wallet">{address}</span>
-                        )}
-                        <button id="btn_copy" onClick={onCopy}>
-                          Copy
-                        </button>
-                      </h4>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="profile_follow de-flex">
+              <>
+                <div className="d_profile de-flex">
                   <div className="de-flex-col">
-                    <div className="profile_follower">
-                      {followersCount} followers
-                    </div>
+                    <div className="profile_avatar">
+                      <Link to={`/author/${author.authorId}`}>
+                        <img
+                          src={author.authorImage || AuthorImageFallback}
+                          alt={author.authorName}
+                          onError={(e) =>
+                            (e.currentTarget.src = AuthorImageFallback)
+                          }
+                        />
+                        <i className="fa fa-check" />
+                      </Link>
 
-                    <button
-                      type="button"
-                      className="btn-main"
-                      onClick={onToggleFollow}
-                    >
-                      {isFollowed ? "Following" : "Follow"}
-                    </button>
+                      <div className="profile_name">
+                        <h4>
+                          {author.authorName}
+                          {author.tag && (
+                            <span className="profile_username">
+                              @{author.tag}
+                            </span>
+                          )}
+                          {author.address && (
+                            <span className="profile_wallet">
+                              {author.address}
+                            </span>
+                          )}
+                          <button id="btn_copy" onClick={onCopy}>
+                            Copy
+                          </button>
+                        </h4>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="profile_follow de-flex">
+                    <div className="de-flex-col">
+                      <div className="profile_follower">
+                        {followersCount} followers
+                      </div>
+
+                      <button className="btn-main" onClick={onToggleFollow}>
+                        {isFollowed ? "Following" : "Follow"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* ✅ Pass authorId correctly */}
-            {!loading && author && (
-              <div className="de_tab tab_simple">
-                <AuthorItems authorId={author.authorId} />
-              </div>
+                {/* ✅ AuthorItems gets authorId from API */}
+                <div className="de_tab tab_simple">
+                  <AuthorItems authorId={author.authorId} />
+                </div>
+              </>
             )}
           </div>
         </section>
