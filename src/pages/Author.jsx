@@ -5,10 +5,10 @@ import { Link, useParams } from "react-router-dom";
 import AuthorBanner from "../images/author_banner.jpg";
 import AuthorItems from "../components/author/AuthorItems";
 import AuthorImageFallback from "../images/author_thumbnail.jpg";
-import { useParams } from "react-router-dom";
+
 
 const Author = () => {
-  const { authorId } = useParams();
+  
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
