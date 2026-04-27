@@ -1,20 +1,24 @@
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import AuthorImageFallback from "../../images/author_thumbnail.jpg";
 import nftImageFallback from "../../images/nftImage.jpg";
 
-// If your route param is different, change this in your route OR here.
 const DEFAULT_AUTHOR_ID = 73855012;
+
+// helper: read query params
+function useQuery() {
+  const { search } = useLocation();
+  return useMemo(() => new URLSearchParams(search), [search]);
+}
 
 const AuthorItems = () => {
   const navigate = useNavigate();
-  const params = useParams();
+  const query = useQuery();
 
-  // Expecting /author/:authorId
-  const authorIdFromUrl = params?.authorId;
-  const authorId = authorIdFromUrl || String(DEFAULT_AUTHOR_ID);
+  // ✅ With your App.jsx, we MUST use /author?author=ID
+  const authorId = query.get("author") || String(DEFAULT_AUTHOR_ID);
 
   const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
 
@@ -24,13 +28,13 @@ const AuthorItems = () => {
   const [author, setAuthor] = useState(null);
   const [nfts, setNfts] = useState([]);
 
-  // Follow button state (single, top-right)
+  // ✅ Single follow button state (top-right)
   const [isFollowed, setIsFollowed] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
 
   const skeletonCards = useMemo(() => new Array(8).fill(0), []);
 
-  // Fetch author + nftCollection whenever authorId changes in URL
+  // ✅ Fetch author + nftCollection when the URL author changes
   useEffect(() => {
     const controller = new AbortController();
 
@@ -49,11 +53,18 @@ const AuthorItems = () => {
         // Author object
         setAuthor(data && typeof data === "object" ? data : null);
 
-        // NFTs
-        const collection = Array.isArray(data?.nftCollection) ? data.nftCollection : [];
+        // NFTs (robust: allow alternative shapes just in case)
+        const collection = Array.isArray(data?.nftCollection)
+          ? data.nftCollection
+          : Array.isArray(data?.nfts)
+          ? data.nfts
+          : Array.isArray(data?.items)
+          ? data.items
+          : [];
+
         setNfts(collection);
 
-        // Seed follow data ONCE per author id
+        // Seed follow counts per author load
         const baseFollowers = Number(data?.followers ?? 0) || 0;
         setFollowersCount(baseFollowers);
         setIsFollowed(false);
@@ -62,7 +73,7 @@ const AuthorItems = () => {
           console.error(err);
           setErrorMsg("Could not load author NFTs. Please try again.");
 
-          // Safe fallbacks so the UI doesn't crash
+          // Fallbacks so UI doesn't crash
           setAuthor({
             authorId,
             authorName: "Unknown Author",
@@ -82,7 +93,7 @@ const AuthorItems = () => {
     return () => controller.abort();
   }, [API_URL, authorId]);
 
-  // Follow toggles +1 then -1 (never below 0)
+  // ✅ Follow button toggles +1 then -1 (never below 0)
   const handleFollowToggle = () => {
     setIsFollowed((prev) => {
       setFollowersCount((count) => (prev ? Math.max(0, count - 1) : count + 1));
@@ -90,10 +101,10 @@ const AuthorItems = () => {
     });
   };
 
-  // Click author icon: ensure URL hits /author/<authorId>
-  const handleAuthorClick = (e) => {
-    e.preventDefault();
-    navigate(`/author/${author?.authorId ?? authorId}`);
+  // ✅ Clicking author icon "hits" author id in the URL using query param
+  const goToAuthor = (id) => {
+    const nextId = id || author?.authorId || authorId;
+    navigate(`/author?author=${nextId}`);
   };
 
   // Derived display fields
@@ -123,13 +134,16 @@ const AuthorItems = () => {
               objectFit: "cover",
             }}
           />
+
           <div>
             <h3 style={{ margin: 0 }}>{authorName}</h3>
+
             {author?.tag ? (
               <div style={{ color: "#7a6ff0", fontWeight: 600, marginTop: 4 }}>
                 @{author.tag}
               </div>
             ) : null}
+
             {author?.address ? (
               <div style={{ opacity: 0.7, marginTop: 6, fontSize: 14 }}>
                 {String(author.address).slice(0, 16)}...
@@ -181,7 +195,10 @@ const AuthorItems = () => {
           {/* Skeletons */}
           {loading ? (
             skeletonCards.map((_, i) => (
-              <div className="col-lg-3 col-md-6 col-sm-6 col-xs-12" key={`sk-${i}`}>
+              <div
+                className="col-lg-3 col-md-6 col-sm-6 col-xs-12"
+                key={`sk-${i}`}
+              >
                 <div className="nft__item">
                   <div className="author_list_pp" style={{ marginBottom: 10 }}>
                     <div className="skeleton skeleton-circle-sm" />
@@ -190,10 +207,25 @@ const AuthorItems = () => {
                   <div className="skeleton skeleton-rect" />
 
                   <div style={{ marginTop: 12 }}>
-                    <div className="skeleton skeleton-line" style={{ width: "78%" }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
-                      <div className="skeleton skeleton-line" style={{ width: "35%" }} />
-                      <div className="skeleton skeleton-line" style={{ width: "25%" }} />
+                    <div
+                      className="skeleton skeleton-line"
+                      style={{ width: "78%" }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginTop: 10,
+                      }}
+                    >
+                      <div
+                        className="skeleton skeleton-line"
+                        style={{ width: "35%" }}
+                      />
+                      <div
+                        className="skeleton skeleton-line"
+                        style={{ width: "25%" }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -212,17 +244,28 @@ const AuthorItems = () => {
               const likes = nft?.likes ?? 0;
 
               return (
-                <div className="col-lg-3 col-md-6 col-sm-6 col-xs-12" key={key}>
+                <div
+                  className="col-lg-3 col-md-6 col-sm-6 col-xs-12"
+                  key={key}
+                >
                   <div className="nft__item">
                     {/* ✅ Author icon on EACH element */}
                     <div className="author_list_pp" style={{ marginBottom: 10 }}>
-                      {/* "Hit the author id in the URL" on click */}
-                      <a href={`/author/${author?.authorId ?? authorId}`} onClick={handleAuthorClick}>
+                      <a
+                        href={`/author?author=${author?.authorId ?? authorId}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goToAuthor(author?.authorId ?? authorId);
+                        }}
+                        title="View author"
+                      >
                         <img
                           className="lazy"
                           src={authorAvatar}
                           alt={authorName}
-                          onError={(e) => (e.currentTarget.src = AuthorImageFallback)}
+                          onError={(e) =>
+                            (e.currentTarget.src = AuthorImageFallback)
+                          }
                           style={{
                             width: 36,
                             height: 36,
@@ -235,19 +278,21 @@ const AuthorItems = () => {
                     </div>
 
                     <div className="nft__item_wrap">
-                      {/* If your app uses /item-details without params, change this link */}
-                      <Link to={`/item-details/${nft?.nftId ?? ""}`}>
+                      {/* ✅ Your App.jsx uses /item-details (no param) so use query param */}
+                      <Link to={`/item-details?nftId=${nft?.nftId ?? ""}`}>
                         <img
                           src={nftImage}
                           className="lazy nft__item_preview"
                           alt={title}
-                          onError={(e) => (e.currentTarget.src = nftImageFallback)}
+                          onError={(e) =>
+                            (e.currentTarget.src = nftImageFallback)
+                          }
                         />
                       </Link>
                     </div>
 
                     <div className="nft__item_info">
-                      <Link to={`/item-details/${nft?.nftId ?? ""}`}>
+                      <Link to={`/item-details?nftId=${nft?.nftId ?? ""}`}>
                         <h4>{title}</h4>
                       </Link>
 
