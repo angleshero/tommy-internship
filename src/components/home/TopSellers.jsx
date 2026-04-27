@@ -105,7 +105,7 @@ const TopSellers = () => {
               {!loading &&
                 !error &&
                 (sellers?.length ? (
-                  {sellers.map((seller) => (
+                  sellers.map((seller) => (
                     <li key={seller.authorId}>
                       <div className="author_list_pp">
                         <Link to={`/author/${seller.authorId}`}>
@@ -128,7 +128,7 @@ const TopSellers = () => {
                         <span>{seller.price} ETH</span>
                       </div>
                     </li>
-                  ))}
+                  ))
                 ) : (
                   <li style={{ padding: "12px 0" }}>
                     <span>No sellers found.</span>
