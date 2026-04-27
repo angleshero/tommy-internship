@@ -5,15 +5,15 @@ import { Link } from "react-router-dom";
 import AuthorImageFallback from "../../images/author_thumbnail.jpg";
 import nftImageFallback from "../../images/nftImage.jpg";
 
-const AuthorItems = ({ authorId }) => {
+const AuthorItems = ({ id }) => {
   const [authorImage, setAuthorImage] = useState(AuthorImageFallback);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authorId) return;
+    if (!id) return;
 
-    const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
+    const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${id}`;
 
     const fetchItems = async () => {
       try {
@@ -33,9 +33,9 @@ const AuthorItems = ({ authorId }) => {
     };
 
     fetchItems();
-  }, [authorId]);
+  }, [id]);
 
-  if (!authorId) return null;
+  if (!id) return null;
 
   return (
     <div className="row">
@@ -43,7 +43,7 @@ const AuthorItems = ({ authorId }) => {
         <div key={item.nftId} className="col-lg-3 col-md-6 col-sm-6">
           <div className="nft__item">
             <div className="author_list_pp">
-              <Link to={`/author/${authorId}`}>
+              <Link to={`/author/${id}`}>
                 <img
                   src={authorImage}
                   alt=""
