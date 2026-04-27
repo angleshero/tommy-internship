@@ -1,33 +1,18 @@
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import AuthorImageFallback from "../../images/author_thumbnail.jpg";
 import nftImageFallback from "../../images/nftImage.jpg";
 
-const DEFAULT_AUTHOR_ID = 73855012;
-
-function useQuery() {
-  const { search } = useLocation();
-  return useMemo(() => new URLSearchParams(search), [search]);
-}
+const API_URL =
+  "https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=73855012";
 
 const AuthorItems = () => {
-  const query = useQuery();
-
-  // ✅ Dynamic authorId from URL: /author?author=73855012
-  const authorId = query.get("author") || String(DEFAULT_AUTHOR_ID);
-
-  // ✅ Use the API you specified (dynamic author id)
-  const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
-
+  const [authorImage, setAuthorImage] = useState(AuthorImageFallback);
+  const [items, setItems] = useState([]); // nftCollection
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-
-  const [author, setAuthor] = useState(null);
-  const [nfts, setNfts] = useState([]);
-
-  const skeletonCards = useMemo(() => new Array(8).fill(0), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,17 +29,32 @@ const AuthorItems = () => {
 
         const data = await res.json();
 
-        setAuthor(data && typeof data === "object" ? data : null);
+        // author image (API may return base64 data url)
+        setAuthorImage(data?.authorImage || AuthorImageFallback);
 
-        // Expected shape: data.nftCollection
-        const collection = Array.isArray(data?.nftCollection) ? data.nftCollection : [];
-        setNfts(collection);
+        // nft collection
+        const collection = Array.isArray(data?.nftCollection)
+          ? data.nftCollection
+          : [];
+
+        setItems(collection);
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error(err);
-          setErrorMsg("Could not load NFTs from the API.");
-          setAuthor(null);
-          setNfts([]);
+          setErrorMsg("Could not load items from API. Showing fallback items.");
+          setAuthorImage(AuthorImageFallback);
+
+          // fallback to 8 placeholders (same as your original)
+          setItems(
+            new Array(8).fill(0).map((_, i) => ({
+              id: i,
+              nftId: i,
+              title: "Pinky Ocean",
+              price: 2.52,
+              likes: 97,
+              nftImage: nftImageFallback,
+            }))
+          );
         }
       } finally {
         setLoading(false);
@@ -63,9 +63,7 @@ const AuthorItems = () => {
 
     load();
     return () => controller.abort();
-  }, [API_URL]);
-
-  const authorAvatar = author?.authorImage || AuthorImageFallback;
+  }, []);
 
   return (
     <div className="de_tab_content">
@@ -87,101 +85,84 @@ const AuthorItems = () => {
         ) : null}
 
         <div className="row">
-          {/* ✅ Skeleton Loading State */}
-          {loading
-            ? skeletonCards.map((_, index) => (
-                <div className="col-lg-3 col-md-6 col-sm-6 col-xs-12" key={`sk-${index}`}>
-                  <div className="nft__item">
-                    <div className="author_list_pp">
-                      <div className="skeleton skeleton-circle" />
-                    </div>
+          {items.map((item, index) => (
+            <div
+              className="col-lg-3 col-md-6 col-sm-6 col-xs-12"
+              key={item?.nftId ?? item?.id ?? index}
+            >
+              <div className="nft__item">
+                <div className="author_list_pp">
+                  <Link to="">
+                    <img
+                      className="lazy"
+                      src={authorImage}
+                      alt=""
+                      onError={(e) =>
+                        (e.currentTarget.src = AuthorImageFallback)
+                      }
+                    />
+                    <i className="fa fa-check"></i>
+                  </Link>
+                </div>
 
-                    <div className="nft__item_wrap">
-                      <div className="skeleton skeleton-rect" />
+                <div className="nft__item_wrap">
+                  <div className="nft__item_extra">
+                    <div className="nft__item_buttons">
+                      <button>Buy Now</button>
+                      <div className="nft__item_share">
+                        <h4>Share</h4>
+                        <a href="" target="_blank" rel="noreferrer">
+                          <i className="fa fa-facebook fa-lg"></i>
+                        </a>
+                        <a href="" target="_blank" rel="noreferrer">
+                          <i className="fa fa-twitter fa-lg"></i>
+                        </a>
+                        <a href="">
+                          <i className="fa fa-envelope fa-lg"></i>
+                        </a>
+                      </div>
                     </div>
+                  </div>
 
-                    <div className="nft__item_info">
-                      <div className="skeleton skeleton-line" />
-                      <div className="skeleton skeleton-line short" />
-                    </div>
+                  {/* Your App.jsx route is /item-details (no param) */}
+                  <Link to="/item-details">
+                    <img
+                      src={item?.nftImage || nftImageFallback}
+                      className="lazy nft__item_preview"
+                      alt=""
+                      onError={(e) =>
+                        (e.currentTarget.src = nftImageFallback)
+                      }
+                    />
+                  </Link>
+                </div>
+
+                <div className="nft__item_info">
+                  <Link to="/item-details">
+                    <h4>{item?.title || "Pinky Ocean"}</h4>
+                  </Link>
+
+                  <div className="nft__item_price">
+                    {typeof item?.price === "number" || typeof item?.price === "string"
+                      ? `${item.price} ETH`
+                      : "—"}
+                  </div>
+
+                  <div className="nft__item_like">
+                    <i className="fa fa-heart"></i>
+                    <span>{item?.likes ?? 0}</span>
                   </div>
                 </div>
-              ))
-            : nfts.map((nft, index) => {
-                const key = nft?.nftId ?? nft?.id ?? index;
-                const title = nft?.title || "Untitled";
-                const price = nft?.price ?? "—";
-                const likes = nft?.likes ?? 0;
-                const image = nft?.nftImage || nftImageFallback;
-
-                return (
-                  <div className="col-lg-3 col-md-6 col-sm-6 col-xs-12" key={key}>
-                    <div className="nft__item">
-                      {/* ✅ Author icon on each element */}
-                      <div className="author_list_pp">
-                        <Link to={`/author?author=${authorId}`}>
-                          <img
-                            className="lazy"
-                            src={authorAvatar}
-                            alt=""
-                            onError={(e) => (e.currentTarget.src = AuthorImageFallback)}
-                          />
-                          <i className="fa fa-check"></i>
-                        </Link>
-                      </div>
-
-                      <div className="nft__item_wrap">
-                        <div className="nft__item_extra">
-                          <div className="nft__item_buttons">
-                            <button>Buy Now</button>
-                            <div className="nft__item_share">
-                              <h4>Share</h4>
-                              <a href="" target="_blank" rel="noreferrer">
-                                <i className="fa fa-facebook fa-lg"></i>
-                              </a>
-                              <a href="" target="_blank" rel="noreferrer">
-                                <i className="fa fa-twitter fa-lg"></i>
-                              </a>
-                              <a href="">
-                                <i className="fa fa-envelope fa-lg"></i>
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Your App.jsx route is /item-details (no param) */}
-                        <Link to="/item-details" state={{ nftId: nft?.nftId }}>
-                          <img
-                            src={image}
-                            className="lazy nft__item_preview"
-                            alt=""
-                            onError={(e) => (e.currentTarget.src = nftImageFallback)}
-                          />
-                        </Link>
-                      </div>
-
-                      <div className="nft__item_info">
-                        <Link to="/item-details" state={{ nftId: nft?.nftId }}>
-                          <h4>{title}</h4>
-                        </Link>
-
-                        <div className="nft__item_price">
-                          {String(price).includes("ETH") ? price : `${price} ETH`}
-                        </div>
-
-                        <div className="nft__item_like">
-                          <i className="fa fa-heart"></i>
-                          <span>{likes}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
 
-      
+        {/* Optional tiny loading hint */}
+        {loading ? (
+          <div style={{ padding: "10px 0", opacity: 0.7 }}>Loading...</div>
+        ) : null}
+      </div>
     </div>
   );
 };
