@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import AuthorBanner from "../images/author_banner.jpg";
 import AuthorItems from "../components/author/AuthorItems";
 import AuthorImageFallback from "../images/author_thumbnail.jpg";
+import { useParams } from "react-router-dom";
 
 const Author = () => {
   const { authorId } = useParams();
@@ -17,6 +18,8 @@ const Author = () => {
   const [followersCount, setFollowersCount] = useState(0);
 
   const followClickLockRef = useRef(false);
+
+  const { id } = useParams();
 
   useEffect(() => {
     // ✅ HARD GUARD — never fetch without ID
@@ -113,7 +116,7 @@ const Author = () => {
                 <div className="d_profile de-flex">
                   <div className="de-flex-col">
                     <div className="profile_avatar">
-                      <Link to={`/author/${author.authorId}`}>
+                      <Link to={`/author/${authorId}`}>
                         <img
                           src={author.authorImage || AuthorImageFallback}
                           alt={author.authorName}
