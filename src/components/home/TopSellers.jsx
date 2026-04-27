@@ -105,10 +105,10 @@ const TopSellers = () => {
               {!loading &&
                 !error &&
                 (sellers?.length ? (
-                  sellers.map((seller, index) => (
-                    <li key={seller?.id || seller?._id || index}>
+                  {sellers.map((seller) => (
+                    <li key={seller.authorId}>
                       <div className="author_list_pp">
-                        <Link to={`/author/${seller?.id || seller?._id}`}>
+                        <Link to={`/author/${seller.authorId}`}>
                           <img
                             className="lazy pp-author"
                             src={getImage(seller) || AuthorImage}
@@ -122,13 +122,13 @@ const TopSellers = () => {
                       </div>
 
                       <div className="author_list_info">
-                        <Link to={`/author/${seller?.id || seller?._id}`}>
+                        <Link to={`/author/${seller.authorId}`}>
                           {getName(seller)}
                         </Link>
                         <span>{seller.price} ETH</span>
                       </div>
                     </li>
-                  ))
+                  ))}
                 ) : (
                   <li style={{ padding: "12px 0" }}>
                     <span>No sellers found.</span>
