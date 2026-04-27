@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import AuthorBanner from "../images/author_banner.jpg";
 import AuthorItems from "../components/author/AuthorItems";
@@ -16,22 +16,21 @@ function useQuery() {
 const Author = () => {
   const query = useQuery();
 
-  // ✅ Works with your existing App.jsx route:
-  // /author?author=73855012
+  // If you also support /author/:authorId, AuthorItems or Author route params can be added later.
+  // For now, this reads from query as you previously had:
   const authorId = query.get("author") || String(DEFAULT_AUTHOR_ID);
 
   const API_URL = `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${authorId}`;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [author, setAuthor] = useState(null);
 
   // Follow UI state
   const [isFollowed, setIsFollowed] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
 
-  // ✅ Prevent dev-mode/StrictMode double-trigger issues
+  // Prevent dev-mode/StrictMode double-trigger issues
   const followClickLockRef = useRef(false);
 
   useEffect(() => {
@@ -53,7 +52,6 @@ const Author = () => {
         if (isMounted) {
           setAuthor(data && typeof data === "object" ? data : null);
 
-          // Seed follow count per author load
           const baseFollowers = Number(data?.followers ?? 0) || 0;
           setFollowersCount(baseFollowers);
           setIsFollowed(false);
@@ -79,44 +77,44 @@ const Author = () => {
     };
   }, [API_URL]);
 
-  // ✅ Follow toggles +1 then -1 — guarded to prevent double-fire in dev
   const onToggleFollow = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Ignore duplicate trigger in development
     if (followClickLockRef.current) return;
     followClickLockRef.current = true;
 
     setIsFollowed((prev) => {
-      setFollowersCount((count) => (prev ? Math.max(0, count - 1) : count + 1));
+      setFollowersCount((count) =>
+        prev ? Math.max(0, count - 1) : count + 1
+      );
       return !prev;
     });
 
-    // Release lock next tick
     setTimeout(() => {
       followClickLockRef.current = false;
     }, 0);
   };
 
-  // Copy wallet to clipboard
   const onCopy = async () => {
     const address = author?.address;
     if (!address) return;
 
     try {
       await navigator.clipboard.writeText(address);
-      // optional: toast/alert
-      // alert("Copied!");
     } catch (e) {
       console.error("Copy failed", e);
     }
   };
 
-  const authorName = author?.authorName || (loading ? "Loading..." : "Unknown Author");
+  const authorName =
+    author?.authorName || (loading ? "Loading..." : "Unknown Author");
   const tag = author?.tag ? `@${author.tag}` : "";
   const address = author?.address || "";
   const authorImage = author?.authorImage || AuthorImageFallback;
+
+  // ✅ THIS is the ONLY allowed author link per your request:
+  const authorLink = `/author/${author?.authorId ?? authorId}`;
 
   return (
     <div id="wrapper">
@@ -149,22 +147,32 @@ const Author = () => {
                 <div className="d_profile de-flex">
                   <div className="de-flex-col">
                     <div className="profile_avatar">
-                      <img
-                        src={authorImage}
-                        alt={authorName}
-                        onError={(e) => {
-                          e.currentTarget.src = AuthorImageFallback;
-                        }}
-                      />
-
-                      <i className="fa fa-check"></i>
+                      {/* ✅ Avatar links to /author/${authorId} */}
+                      <Link to={authorLink} title="View author">
+                        <img
+                          src={authorImage}
+                          alt={authorName}
+                          onError={(e) => {
+                            e.currentTarget.src = AuthorImageFallback;
+                          }}
+                        />
+                        <i className="fa fa-check"></i>
+                      </Link>
 
                       <div className="profile_name">
                         <h4>
-                          {authorName}
+                          {/* ✅ Name links to /author/${authorId} */}
+                          <Link to={authorLink} style={{ textDecoration: "none" }}>
+                            {authorName}
+                          </Link>
 
                           {tag ? (
-                            <span className="profile_username">{tag}</span>
+                            <span className="profile_username">
+                              {/* ✅ Username links to /author/${authorId} */}
+                              <Link to={authorLink} style={{ textDecoration: "none" }}>
+                                {tag}
+                              </Link>
+                            </span>
                           ) : null}
 
                           {address ? (
@@ -188,7 +196,6 @@ const Author = () => {
                         {loading ? "Loading..." : `${followersCount} followers`}
                       </div>
 
-                      {/* ✅ Use a real button (not Link) + guard to prevent double increments */}
                       <button
                         type="button"
                         className="btn-main"
@@ -205,7 +212,6 @@ const Author = () => {
               {/* Tabs / AuthorItems */}
               <div className="col-md-12">
                 <div className="de_tab tab_simple">
-                  {/* AuthorItems reads authorId from URL query too (/author?author=...) */}
                   <AuthorItems />
                 </div>
               </div>
