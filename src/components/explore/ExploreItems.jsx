@@ -192,7 +192,7 @@ const ExploreItems = () => {
               <div className="nft__item">
                 {/* Author */}
                 <div className="author_list_pp">
-                  <Link to="/author">
+                  <Link to={`/author/${item.authorId}`}>
                     <img
                       src={item.authorImage}
                       alt="author"
