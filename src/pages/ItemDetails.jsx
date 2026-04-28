@@ -38,7 +38,7 @@ function Skeleton({ className = "", style = {} }) {
 const ItemDetails = () => {
   const query = useQuery();
 
-  // ✅ Silent fallback (no warning banner)
+  // silent fallback
   const nftId = query.get("nftId") || "17914494";
 
   const [item, setItem] = useState(null);
@@ -58,11 +58,13 @@ const ItemDetails = () => {
         setError("");
         setItem(null);
 
-        const url = `https://us-central1-nft-cloud-functions.cloudfunctions.net/itemDetails?nftId=${encodeURIComponent(
-          nftId
-        )}`;
+        const res = await fetch(
+          `https://us-central1-nft-cloud-functions.cloudfunctions.net/itemDetails?nftId=${encodeURIComponent(
+            nftId
+          )}`,
+          { signal: controller.signal }
+        );
 
-        const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
 
         const data = await res.json();
@@ -79,12 +81,6 @@ const ItemDetails = () => {
     load();
     return () => controller.abort();
   }, [nftId]);
-
-  const onRetry = () => {
-    setLoading(true);
-    setError("");
-    setItem(null);
-  };
 
   // ---------- mapped data ----------
   const title = pickFirst(item, ["title", "name", "nftName"], `NFT #${nftId}`);
@@ -104,25 +100,36 @@ const ItemDetails = () => {
   const likes = pickFirst(item, ["likes", "likeCount"], 0);
   const priceEth = pickFirst(item, ["price", "ethPrice", "priceEth"], null);
 
+  // ----- OWNER -----
   const owner = pickFirst(item, ["owner", "ownerInfo"], {});
   const ownerName = pickFirst(owner, ["ownerName", "username"], "Unknown Owner");
-  const ownerId = pickFirst(owner, ["ownerId", "authorId"], "");
+  const ownerId = pickFirst(
+    owner,
+    ["ownerId", "authorId", "id", "author", "userId"],
+    ""
+  );
   const ownerAvatar = pickFirst(
     owner,
     ["ownerAvatar", "avatar", "profileImage"],
     AuthorImageFallback
   );
 
+  // ----- CREATOR -----
   const creator = pickFirst(item, ["creator", "creatorInfo"], {});
   const creatorName = pickFirst(creator, ["creatorName"], "Unknown Creator");
-  const creatorId = pickFirst(creator, ["creatorId"], "");
+  const creatorId = pickFirst(
+    creator,
+    ["creatorId", "authorId", "id", "author", "userId"],
+    ""
+  );
   const creatorAvatar = pickFirst(
     creator,
     ["creatorAvatar", "creatorImage"],
     AuthorImageFallback
   );
 
-  const authorLink = (id) => (id ? `/author?author=${id}` : "/author");
+  // ✅ Route param link
+  const authorLink = (id) => `/author/${id}`;
 
   return (
     <div id="wrapper">
@@ -132,9 +139,6 @@ const ItemDetails = () => {
             {error && (
               <div className="alert alert-danger">
                 <strong>Error:</strong> {error}
-                <button className="btn btn-primary ml-3" onClick={onRetry}>
-                  Retry
-                </button>
               </div>
             )}
 
@@ -177,24 +181,36 @@ const ItemDetails = () => {
 
                   {/* OWNER */}
                   <h6>Owner</h6>
-                  <Link to={authorLink(ownerId)} className="item_author">
+                  <Link
+                    to={authorLink(ownerId)}
+                    className={`item_author ${!ownerId ? "disabled-link" : ""}`}
+                    onClick={(e) => !ownerId && e.preventDefault()}
+                  >
                     <img
                       src={ownerAvatar}
                       alt={ownerName}
                       className="author_list_pp"
-                      onError={(e) => (e.currentTarget.src = AuthorImageFallback)}
+                      onError={(e) =>
+                        (e.currentTarget.src = AuthorImageFallback)
+                      }
                     />
                     <span>{ownerName}</span>
                   </Link>
 
                   {/* CREATOR */}
                   <h6 className="mt-3">Creator</h6>
-                  <Link to={authorLink(creatorId)} className="item_author">
+                  <Link
+                    to={authorLink(creatorId)}
+                    className={`item_author ${!creatorId ? "disabled-link" : ""}`}
+                    onClick={(e) => !creatorId && e.preventDefault()}
+                  >
                     <img
                       src={creatorAvatar}
                       alt={creatorName}
                       className="author_list_pp"
-                      onError={(e) => (e.currentTarget.src = AuthorImageFallback)}
+                      onError={(e) =>
+                        (e.currentTarget.src = AuthorImageFallback)
+                      }
                     />
                     <span>{creatorName}</span>
                   </Link>
@@ -203,7 +219,9 @@ const ItemDetails = () => {
                   <h6 className="mt-3">Price</h6>
                   <div className="nft-item-price">
                     <img src={EthImage} alt="ETH" />
-                    <span>{priceEth == null ? "—" : formatEth(priceEth)}</span>
+                    <span>
+                      {priceEth == null ? "—" : formatEth(priceEth)}
+                    </span>
                   </div>
                 </div>
               </div>
