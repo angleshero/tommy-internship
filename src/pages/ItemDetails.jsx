@@ -59,7 +59,7 @@ const ItemDetails = () => {
         setItem(null);
 
         const res = await fetch(
-          `https://us-central1-nft-cloud-functions.cloudfunctions.net/itemDetails?nftId=${(nftId)}`,
+          `https://us-central1-nft-cloud-functions.cloudfunctions.net/itemDetails?nftId=${nftId}`,
           { signal: controller.signal }
         );
 
