@@ -26,7 +26,7 @@ function App() {
   return (
     <>
       <Nav />
-      <Routes>
+      <Routes> 
         <Route path="/" element={<Home />} />
         <Route path="/:id" element={<Home />} />
         <Route path="/explore" element={<Explore />} />
