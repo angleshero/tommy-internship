@@ -8,15 +8,15 @@ const ItemDetails = () => {
   const { id } = useParams();
   const [itemDetails, setItemDetails] = useState("");
   const [loading, setLoading] = useState();
-
-  const fetchItemDetails = async () => {
-    const { data } = await axios.get(
-      `https://us-central1-nft-cloud-functions.cloudfunctions.net/itemDetails?nftId=${id}`
-    );
-    setItemDetails(data);
-    setLoading(false);
-  };
-
+  useEffect(() => {
+    const fetchItemDetails = async () => {
+      const { data } = await axios.get(
+        `https://us-central1-nft-cloud-functions.cloudfunctions.net/itemDetails?nftId=${id}`
+      );
+      setItemDetails(data);
+    };
+    fetchItemDetails();
+  }, [id]);
   useEffect(() => {
     fetchItemDetails();
   }, []);

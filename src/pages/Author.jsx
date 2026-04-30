@@ -11,18 +11,15 @@ const Author = () => {
   const [authorData, setAuthorData] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
-  
-  const fetchAuthorData = async () => {
-    const { data } = await axios.get(
-      `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${id}`
-    );
-    setAuthorData(data);
-    setLoading(false);
-  };
-
   useEffect(() => {
+    const fetchAuthorData = async () => {
+      const { data } = await axios.get(
+        `https://us-central1-nft-cloud-functions.cloudfunctions.net/authors?author=${id}`
+      );
+      setAuthorData(data);
+    };
     fetchAuthorData();
-  }, []);
+  }, [id]);
 
   return (
     <div id="wrapper">
@@ -45,8 +42,10 @@ const Author = () => {
                   <div className="de-flex-col">
                     <div className="profile_avatar">
                       {authorData ? (
-                        <img src={authorData.authorImage} alt="" />
-                      ) : ( 
+                        <img src={authorData.authorImage} alt="" onError={(e) => {
+                          e.target.src = "https://via.placeholder.com/150";
+                        }} />
+                      ) : (
                         <Skeleton
                           width="150px"
                           height="150px"

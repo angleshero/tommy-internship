@@ -120,35 +120,39 @@ const HotCollections = () => {
     })();
 
     return displayItems.map((item, idx) => (
-      <div className="keen-slider__slide" key={`${item.id}-${idx}`}> 
-        <div className="nft_coll">
-          <div className="nft_wrap">
-            <Link to={`/item-details/${item.nftId}`}>
-              <img
-                src={item.nftImage}
-                className="lazy img-fluid"
-                alt={item.title}
-                loading="lazy"
-              />
-            </Link>
-          </div>
-          <div className="nft_coll_pp">
-            <Link to={`/author/${item.authorId}`}>
-              <img
-                className="lazy pp-coll"
-                src={item.authorImage}
-                alt="author"
-                loading="lazy"
-              />
-            </Link>
-            <i className="fa fa-check"></i>
-          </div>
-          <div className="nft_coll_info">
-            <Link to="/explore">
-              <h4>{item.title}</h4>
-            </Link>
-            <span>ERC-{item.code}</span>
-          </div>
+      <div className="keen-slider__slide" key={`${item.id}-${idx}`}>
+        <div className="nft_wrap">
+          <Link to={`/collection/${item.id}`}>
+            <img
+              className="lazy img-fluid"
+              src={item.nftImage}
+              alt=""
+              loading="lazy"
+              onError={(e) => {
+                e.target.src = "https://via.placeholder.com/350";
+              }}
+            />
+          </Link>
+        </div>
+        <div className="nft_coll_pp">
+          <Link to={`/author/${item.authorId}`}>
+            <img
+              className="lazy pp-coll"
+              src={item.authorImage}
+              alt="author"
+              loading="lazy"
+              onError={(e) => {
+                e.target.src = "https://via.placeholder.com/150";
+              }}
+            />
+          </Link>
+          <i className="fa fa-check"></i>
+        </div>
+        <div className="nft_coll_info">
+          <Link to="/explore">
+            <h4>{item.title}</h4>
+          </Link>
+          <span>ERC-{item.code}</span>
         </div>
       </div>
     ));

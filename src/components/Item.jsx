@@ -13,9 +13,9 @@ const Item = ({id, title, authorImage, nftImage, nftId, authorId, code, price, l
           data-bs-placement="top"
           title={`Creator: ${title}`}
         >
-          <img className="lazy" src={authorImage} alt={title} />
-          <i className="fa fa-check"></i>
-        </Link>
+      <img className="lazy" src={authorImage} alt={title} onError={(e) => {
+              e.target.src = "https://via.placeholder.com/150";
+            }} />
       </div>
 
       { /* Countdown */ }
@@ -60,7 +60,9 @@ const Item = ({id, title, authorImage, nftImage, nftId, authorId, code, price, l
             alt={title}
           />
         </Link>
-      </div>
+      </div> onError={(e) => {
+              e.target.src = "https://via.placeholder.com/350";
+            }}
 
       { /* Info */ }
       <div className="nft__item_info">

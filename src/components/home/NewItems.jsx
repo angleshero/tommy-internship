@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css";
 import axios from "axios";
@@ -10,7 +9,6 @@ import AOS from "aos";
 const NewItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newCurrentSlide, setNewCurrentSlide] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [sliderRef, instanceRef] = useKeenSlider({
     loop: true,
@@ -19,11 +17,6 @@ const NewItems = () => {
       origin: "left",
       perView: 4,
       spacing: 10,
-    },
-    slideChanged(slider) {
-      window.requestAnimationFrame(() => {
-        setNewCurrentSlide(slider.track.details.rel);
-      });
     },
     created() {
       setLoaded(true);
@@ -62,7 +55,7 @@ const NewItems = () => {
     if (instanceRef.current) {
       instanceRef.current.update();
     }
-  }, [items]);
+  }, [items, instanceRef]);
   useEffect(() => {
     if (!sliderRef.current || !instanceRef.current) return;
 
@@ -79,6 +72,13 @@ const NewItems = () => {
         img.addEventListener("load", handleUpdate);
       }
     });
+    window.addEventListener("resize", handleUpdate);
+
+    return () => {
+      imgs.forEach((img) => img.removeEventListener("load", handleUpdate));
+      window.removeEventListener("resize", handleUpdate);
+    };
+  }, [loaded, items, instanceRef, sliderRef]);
     window.addEventListener("resize", handleUpdate);
 
     return () => {

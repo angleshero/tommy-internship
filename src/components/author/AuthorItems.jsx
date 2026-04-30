@@ -27,6 +27,9 @@ const AuthorItems = ({ authorData }) => {
                           className="lazy"
                           src={authorData.authorImage}
                           alt=""
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/150";
+                          }}
                         />
                         <i className="fa fa-check"></i>
                       </Link>
@@ -37,12 +40,10 @@ const AuthorItems = ({ authorData }) => {
                           src={item.nftImage}
                           className="lazy nft__item_preview"
                           alt=""
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/350";
+                          }}
                         />
-                      </Link>
-                    </div>
-                    <div className="nft__item_info">
-                      <Link to={`/item-details/${item.nftId}`}>
-                        <h4>{item.title}</h4>
                       </Link>
                       <div className="nft__item_price">{item.price} ETH</div>
                       <div className="nft__item_like">
