@@ -1,123 +1,86 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useKeenSlider } from "keen-slider/react";
-import "keen-slider/keen-slider.min.css";
+
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import AOS from "aos";
+import "aos/dist/aos.css";
+
 import Skeleton from "../UI/Skeleton";
 import Item from "../Item";
-import AOS from "aos";
+
+// Owl Carousel
+import OwlCarousel from "react-owl-carousel";
+import "owl.carousel/dist/assets/owl.carousel.css";
+import "owl.carousel/dist/assets/owl.theme.default.css";
 
 const NewItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loaded, setLoaded] = useState(false);
-  const [sliderRef, instanceRef] = useKeenSlider({
-    loop: true,
-    initial: 0,
-    slides: {
-      origin: "left",
-      perView: 4,
-      spacing: 10,
-    },
-    created() {
-      setLoaded(true);
-    },
-    breakpoints: {
-      "(min-width: 150px)": {
-        slides: { perView: 1 },
-      },
-      "(min-width: 768px)": {
-        slides: { perView: 2, spacing: 15 },
-      },
-      "(min-width: 992px)": {
-        slides: { perView: 4, spacing: 5 },
-      },
-      "(min-width: 1200px)": {
-        slides: { perView: 4, spacing: 10 },
-      },
-    },
-  });
 
   const fetchNewItems = async () => {
-    const { data } = await axios.get(
-      `https://us-central1-nft-cloud-functions.cloudfunctions.net/newItems`
-    );
-    setItems(data);
-    setLoading(false);
+    try {
+      const { data } = await axios.get(
+        "https://us-central1-nft-cloud-functions.cloudfunctions.net/newItems"
+      );
+      setItems(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch new items:", err);
+      setItems([]);
+    } finally {
+      setLoading(false);
+      // AOS refresh after DOM updates
+      setTimeout(() => AOS.refreshHard(), 0);
+    }
   };
 
   useEffect(() => {
-    fetchNewItems().then(() => {
-      AOS.refresh();
-    });
+    AOS.init({ once: true });
+    fetchNewItems();
   }, []);
-
-  useEffect(() => {
-    if (instanceRef.current) {
-      instanceRef.current.update();
-    }
-  }, [items, instanceRef]);
-  useEffect(() => {
-    if (!sliderRef.current || !instanceRef.current) return;
-
-    const handleUpdate = () => {
-      if (instanceRef.current) instanceRef.current.update();
-    };
-
-    const imgs = sliderRef.current.querySelectorAll("img");
-
-    imgs.forEach((img) => {
-      if (img.complete) {
-        handleUpdate();
-      } else {
-        img.addEventListener("load", handleUpdate);
-      }
-    });
-    window.addEventListener("resize", handleUpdate);
-
-    return () => {
-      imgs.forEach((img) => img.removeEventListener("load", handleUpdate));
-      window.removeEventListener("resize", handleUpdate);
-    };
-  }, [loaded, items, instanceRef, sliderRef]);
-
-  const handlePrev = useCallback(() => {
-    instanceRef.current?.prev();
-  }, [instanceRef]);
-
-  const handleNext = useCallback(() => {
-    instanceRef.current?.next();
-  }, [instanceRef]);
-
-  const Arrow = React.memo(function Arrow({ left, onClick }) {
-    return (
-      <button
-        className={`arrow ${left ? "arrow-left" : "arrow-right"}`}
-        onClick={onClick}
-        aria-label={left ? "Previous slide" : "Next slide"}
-      >
-        {left ? (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M16.67 0l2.83 2.829-9.34 9.175 9.34 9.167-2.83 2.829L4.5 12z" />
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M7.33 24l-2.83-2.829 9.34-9.175-9.34-9.167L7.33 0l12.17 12z" />
-          </svg>
-        )}
-      </button>
-    );
-  });
 
   // Ensure at least 4 items are displayed by padding with repeats if needed
   const displayItems = useMemo(() => {
     if (!items || items.length === 0) return [];
     if (items.length >= 4) return items;
+
     const padded = [...items];
     for (let i = 0; padded.length < 4; i++) {
       padded.push(items[i % items.length]);
     }
     return padded;
   }, [items]);
+
+  // ✅ Owl options (4 at a time on desktop)
+  const owlOptions = useMemo(
+    () => ({
+      loop: displayItems.length > 4, // loop only when enough items
+      margin: 10,
+      nav: true,
+      dots: false,
+      autoplay: false,
+      smartSpeed: 700,
+      navText: [
+        // left
+        `<button class="arrow arrow-left" aria-label="Previous slide">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M16.67 0l2.83 2.829-9.34 9.175 9.34 9.167-2.83 2.829L4.5 12z"></path>
+          </svg>
+        </button>`,
+        // right
+        `<button class="arrow arrow-right" aria-label="Next slide">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M7.33 24l-2.83-2.829 9.34-9.175-9.34-9.167L7.33 0l12.17 12z"></path>
+          </svg>
+        </button>`,
+      ],
+      responsive: {
+        0: { items: 1 },
+        768: { items: 2 },
+        992: { items: 4 },
+        1200: { items: 4 },
+      },
+    }),
+    [displayItems.length]
+  );
 
   return (
     <section id="section-new-items" className="no-bottom">
@@ -130,28 +93,30 @@ const NewItems = () => {
             </div>
           </div>
 
-          <div className="navigation-wrapper">
-            <div ref={sliderRef} className="keen-slider">
-              {loading
-                ? new Array(4).fill(0).map((_, index) => (
-                    <div className="keen-slider__slide" key={index}>
+          {/* IMPORTANT: keep carousel inside a Bootstrap column */}
+          <div className="col-lg-12">
+            <div className="navigation-wrapper">
+              {loading ? (
+                <div className="row">
+                  {new Array(4).fill(0).map((_, index) => (
+                    <div className="col-12 col-md-6 col-lg-3" key={index}>
                       <Skeleton width="100%" height="350px" />
                     </div>
-                  ))
-                : displayItems.map((item) => (
-                    <div className="keen-slider__slide" key={`${item.id}-${item.title}-${item.authorId || ""}-${item.nftId || ""}`}> 
+                  ))}
+                </div>
+              ) : (
+                <OwlCarousel className="owl-theme" {...owlOptions}>
+                  {displayItems.map((item, idx) => (
+                    <div
+                      className="item"
+                      key={`${item.id}-${item.title}-${item.authorId || ""}-${item.nftId || ""}-${idx}`}
+                    >
                       <Item {...item} />
                     </div>
                   ))}
+                </OwlCarousel>
+              )}
             </div>
-
-            {/* Arrows */}
-            {loaded && instanceRef.current && (
-              <>
-                <Arrow left onClick={handlePrev} />
-                <Arrow onClick={handleNext} />
-              </>
-            )}
           </div>
         </div>
       </div>
