@@ -79,13 +79,6 @@ const NewItems = () => {
       window.removeEventListener("resize", handleUpdate);
     };
   }, [loaded, items, instanceRef, sliderRef]);
-    window.addEventListener("resize", handleUpdate);
-
-    return () => {
-      imgs.forEach((img) => img.removeEventListener("load", handleUpdate));
-      window.removeEventListener("resize", handleUpdate);
-    };
-  }, [loaded, items]);
 
   const handlePrev = useCallback(() => {
     instanceRef.current?.prev();
