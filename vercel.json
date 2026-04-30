@@ -5,7 +5,7 @@
   "outputDirectory": "build",
   "framework": "create-react-app",
   "installCommand": "npm install --legacy-peer-deps",
-  "cache": false,
+  
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
