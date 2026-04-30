@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Skeleton from "../UI/Skeleton";
-import CountDownTimer from "../home/CountDownTimer";
+// import CountDownTimer from "../home/CountDownTimer";
 
 
 const ExploreItems = () => {
@@ -63,7 +63,9 @@ const ExploreItems = () => {
                   <i className="fa fa-check"></i>
                 </Link>
               </div>
-              {item.expiryDate && <CountDownTimer expiryDate={item.expiryDate} />}
+              {item.expiryDate
+              //  && <CountDownTimer expiryDate={item.expiryDate} />
+               }
 
               <div className="nft__item_wrap">
                 <Link to={`/item-details/${item.nftId}`}>

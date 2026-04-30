@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import axios from "axios";
-import Item from "../Item";
+// import Item from "../Item";
 import Skeleton from "../UI/Skeleton";
 import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css";
