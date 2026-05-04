@@ -32,6 +32,7 @@ function App() {
         <Route path="/explore" element={<Explore />} />
         <Route path="/author/:id" element={<Author />} />
         <Route path="/item-details/:id" element={<ItemDetails />} />
+        
       </Routes>
       <Footer />
     </>

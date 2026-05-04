@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Skeleton from "../UI/Skeleton";
+import Item from "../Item";
 
 // Owl Carousel
 import OwlCarousel from "react-owl-carousel";
@@ -100,9 +101,9 @@ const HotCollections = () => {
             ) : (
               <OwlCarousel className="owl-theme" {...owlOptions}>
                 {displayItems.map((item, idx) => (
-                  <div className="item" key={`${item.id}-${idx}`}>
+                  <div className="item" key={`${item.nftId}-${idx}`}>
                     <div className="nft_wrap">
-                      <Link to={`/collection/${item.id}`}>
+                      <Link to={`/item-details/${item.nftId}`}>
                         <img
                           className="img-fluid"
                           src={item.nftImage}
